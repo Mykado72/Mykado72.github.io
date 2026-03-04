@@ -2,62 +2,90 @@ window.chromaMix = (() => {
     const wheels = {};
 
     /**
-     * Dessine la roue chromatique avec saturation et luminosité appliquées.
-     * @param {string} canvasId
-     * @param {number} saturation  0–100
-     * @param {number} lightness   0–100
+     * Dessine la roue chromatique — rendu pixel par pixel via ImageData
+     * pour un résultat parfaitement lisse, sans artefact ni effet de moiré.
      */
     function drawWheel(canvasId, saturation = 100, lightness = 50) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) { setTimeout(() => drawWheel(canvasId, saturation, lightness), 100); return; }
 
-        const ctx    = canvas.getContext('2d');
-        const cx     = canvas.width  / 2;
-        const cy     = canvas.height / 2;
+        const ctx  = canvas.getContext('2d');
+        const W    = canvas.width;
+        const H    = canvas.height;
+        const cx   = W / 2;
+        const cy   = H / 2;
         const outerR = cx - 4;
         const innerR = outerR * 0.22;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // ── Rendu pixel par pixel (zéro artefact) ────────────────────────────
+        const imgData = ctx.createImageData(W, H);
+        const data    = imgData.data;
 
-        // ── Anneau de teintes : 360 segments ─────────────────────────────────
-        const segments = 360;
+        const sat = saturation / 100;
 
-        for (let seg = 0; seg < segments; seg++) {
-            const a1   = (seg       / segments) * Math.PI * 2 - Math.PI / 2;
-            const a2   = ((seg + 1) / segments) * Math.PI * 2 - Math.PI / 2;
-            const hMid = (seg + 0.5) / segments * 360;
+        for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+                const dx   = x - cx;
+                const dy   = y - cy;
+                const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Dégradé radial : centre blanc → couleur principale → bord sombre
-            const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-            grad.addColorStop(0,   `hsl(${hMid}, ${saturation}%, 95%)`);
-            grad.addColorStop(0.35,`hsl(${hMid}, ${saturation}%, ${lightness}%)`);
-            grad.addColorStop(1,   `hsl(${hMid}, ${saturation}%, ${Math.max(5, lightness - 28)}%)`);
+                // Hors de l'anneau → transparent
+                if (dist < innerR || dist > outerR) continue;
 
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, outerR, a1, a2);
-            ctx.closePath();
-            ctx.fillStyle = grad;
-            ctx.fill();
+                // Teinte : angle géométrique (0° = haut)
+                let hue = Math.atan2(dy, dx) * 180 / Math.PI + 90;
+                if (hue < 0) hue += 360;
+
+                // Luminosité : interpolation radiale
+                // bord intérieur → 95% (presque blanc / pastel)
+                // zone principale → lightness réglé
+                // bord extérieur  → assombri
+                const t   = (dist - innerR) / (outerR - innerR); // 0=inner, 1=outer
+                let   lum;
+                if (t < 0.35) {
+                    // Centre pastel : 95% → lightness
+                    lum = 95 - (95 - lightness) * (t / 0.35);
+                } else {
+                    // Bord sombre : lightness → lightness-28
+                    lum = lightness - (lightness - Math.max(5, lightness - 28)) * ((t - 0.35) / 0.65);
+                }
+
+                // HSL → RGB
+                const [r, g, b] = hslToRgb(hue / 360, sat, lum / 100);
+
+                const idx = (y * W + x) * 4;
+                data[idx]     = r;
+                data[idx + 1] = g;
+                data[idx + 2] = b;
+                data[idx + 3] = 255;
+            }
         }
 
-        // ── Fondu blanc central (pastels) ─────────────────────────────────────
-        const fadeGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, innerR * 2.8);
-        fadeGrad.addColorStop(0,   'rgba(255,255,255,1)');
-        fadeGrad.addColorStop(0.5, 'rgba(255,255,255,0.55)');
-        fadeGrad.addColorStop(1,   'rgba(255,255,255,0)');
-        ctx.beginPath();
-        ctx.arc(cx, cy, innerR * 2.8, 0, Math.PI * 2);
-        ctx.fillStyle = fadeGrad;
-        ctx.fill();
+        ctx.putImageData(imgData, 0, 0);
 
-        // ── Trou central ──────────────────────────────────────────────────────
+        // ── Trou central (antialiasé avec arc) ───────────────────────────────
         ctx.beginPath();
         ctx.arc(cx, cy, innerR, 0, Math.PI * 2);
         ctx.fillStyle = '#111';
         ctx.fill();
 
         wheels[canvasId] = { canvas, saturation, lightness };
+    }
+
+    // ── Conversion HSL → RGB ──────────────────────────────────────────────────
+    function hslToRgb(h, s, l) {
+        if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        return [hueChannel(p, q, h + 1/3), hueChannel(p, q, h), hueChannel(p, q, h - 1/3)];
+    }
+    function hueChannel(p, q, t) {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1/6) return Math.round((p + (q - p) * 6 * t) * 255);
+        if (t < 1/2) return Math.round(q * 255);
+        if (t < 2/3) return Math.round((p + (q - p) * (2/3 - t) * 6) * 255);
+        return Math.round(p * 255);
     }
 
     /** Lit le pixel RGBA sous le curseur. */
@@ -71,8 +99,7 @@ window.chromaMix = (() => {
     }
 
     /**
-     * Retourne la teinte pure (0–360) du point (x,y) sur la roue,
-     * calculée géométriquement — indépendante du rendu pixel.
+     * Retourne la teinte (0–360) calculée géométriquement.
      * Retourne -1 si hors de la roue.
      */
     function getHueAt(canvasId, x, y) {
