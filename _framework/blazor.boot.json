@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "ColorMixer",
   "resources": {
-    "hash": "sha256-0TBW4OJXwUlHk2eRsrdqWIe+BtF+NyX3E34AkN39+q0=",
+    "hash": "sha256-n8lqOLj/XdBbnQM5U5dIkvVuYyJ/9S2wc6d9LS+ly5I=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -47,7 +47,7 @@
       "System.Text.Json.wasm": "sha256-OcOFHwNFFSa7XKg2flxQxYkz9h8jq3zgYV/Hvyw4+WE=",
       "System.Text.RegularExpressions.wasm": "sha256-EBNNP57+VS/OjAuJHOY1mCfaJCJQYORnhF3/w7wP5kI=",
       "System.Private.CoreLib.wasm": "sha256-pud932tsIxig9fsI1xMowd4k7RYoozf01htvAjRb0H4=",
-      "ColorMixer.wasm": "sha256-AuuLvpEJuL0ucWhEjBkjMisdKPKV7WawRVbkrKR02LU="
+      "ColorMixer.wasm": "sha256-uAepXbM8OStF390gQapRzrLiC8uZPQYoyiRLUYdkbfM="
     }
   },
   "cacheBootResources": true,
