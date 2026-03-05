@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "ColorMixer",
   "resources": {
-    "hash": "sha256-ouo32JBWEIm5xF7hVOlC5OX0uDCnCk0X+El+do5ce2E=",
+    "hash": "sha256-0aOX5WLDPpBFiUaWDVf5JozdgyM2OmHfBuUENfVv3wM=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -42,12 +42,12 @@
       "System.Net.Primitives.wasm": "sha256-e/ventvhLQqSmnoLpE6k5xnK5jZzq8AOqarcjVwH6XU=",
       "System.Private.Uri.wasm": "sha256-7Jg0a0C5zq5rv8oMi37PUSR0DiT2oGem2mJv654ig+E=",
       "System.Runtime.InteropServices.JavaScript.wasm": "sha256-z96dAg2FoX+f5YJi84FrnjmI2j3/q+bOfVzNoGEaO1k=",
-      "System.Runtime.wasm": "sha256-2zBxG9fHBd+AedXHypy+sRFKjr5Cf3CNUMuKQ/FMp0Q=",
+      "System.Runtime.wasm": "sha256-6QWlJXk0q017ofyh+ej13x632S8LKSLtfJ2NqxPsy64=",
       "System.Text.Encodings.Web.wasm": "sha256-lDNhBYxzB2oWW3QF6CVQvqP8vU/iFCBV+gT4zkljouY=",
       "System.Text.Json.wasm": "sha256-OcOFHwNFFSa7XKg2flxQxYkz9h8jq3zgYV/Hvyw4+WE=",
       "System.Text.RegularExpressions.wasm": "sha256-EBNNP57+VS/OjAuJHOY1mCfaJCJQYORnhF3/w7wP5kI=",
       "System.Private.CoreLib.wasm": "sha256-SGbXTad/22KWeZSplhz/VlCinqPoWzE19ZrV5YKB6OA=",
-      "ColorMixer.wasm": "sha256-1CagpYQ/nIdG2NLVhJ0iuQw4E6+ZR9w1VlGsg02sNbs="
+      "ColorMixer.wasm": "sha256-5U0cjWOg2dJ0JUWdQgSHUMIfnx9bAgJA/1WdUWNg5k4="
     }
   },
   "cacheBootResources": true,

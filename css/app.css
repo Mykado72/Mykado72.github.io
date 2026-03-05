@@ -268,16 +268,7 @@ html, body {
 .comp-bar { height: 100%; border-radius: 3px; transition: width 0.4s ease; opacity: 0.85; }
 .comp-pct { font-size: 11px; color: var(--muted); text-align: right; }
 
-/* ── Compare Row ─────────────────────────────────────────────────────────── */
-.result-compare {
-    display: flex; align-items: center; gap: 12px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border);
-}
-
-.compare-block { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.compare-block span { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
-.compare-arrow { font-size: 16px; color: var(--muted); flex: 1; text-align: center; }
+/* ── Compare Row — voir styles en bas ─────────────────────────────────── */
 
 .delta-legend {
     font-size: 9px; letter-spacing: 1px; color: var(--muted);
@@ -301,10 +292,12 @@ html, body {
 
 .welcome-screen {
     min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at 30% 40%, rgba(200,255,87,0.06) 0%, transparent 60%),
                 radial-gradient(ellipse at 70% 60%, rgba(255,107,204,0.05) 0%, transparent 60%),
                 var(--bg);
+    padding-bottom: 48px;
+    position: relative;
 }
 
 .welcome-inner {
@@ -439,5 +432,58 @@ html, body {
 .comp-name    { font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .comp-pigment { font-size: 9px; color: #7dd3fc; letter-spacing: 0.5px; }
 
-/* Comparatif mouillé → sec en aquarelle */
-.result-compare { flex-wrap: wrap; }
+
+/* ── Dédicace page d'accueil ──────────────────────────────────────────────── */
+.welcome-dedication {
+    position: absolute;
+    bottom: 24px;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    opacity: 0.55;
+}
+
+/* ── Comparatif côte à côte — règle unique ci-dessous ─────────────────── */
+
+/* compare styles → voir section unifiée en bas */
+
+/* ══ Comparatif couleurs (règle unique) ══════════════════════════════════════ */
+.result-compare {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.compare-duo {
+    display: flex;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+    flex-shrink: 0;
+}
+
+.compare-swatch {
+    width: 56px;
+    height: 48px;
+}
+
+.compare-labels {
+    display: flex;
+    width: 112px;
+}
+
+.compare-labels span {
+    flex: 1;
+    text-align: center;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding-top: 4px;
+}

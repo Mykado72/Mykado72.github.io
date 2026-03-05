@@ -118,5 +118,17 @@ window.chromaMix = (() => {
         return angle;
     }
 
-    return { drawWheel, pickPixel, getHueAt };
+    /**
+     * Scroll automatique vers le panneau résultats — uniquement sur mobile.
+     */
+    function scrollToResults() {
+        // Seulement si l'écran est en mode colonne (mobile/tablette)
+        if (window.innerWidth > 900) return;
+        const panel = document.getElementById('results-panel');
+        if (panel) {
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    return { drawWheel, pickPixel, getHueAt, scrollToResults };
 })();
