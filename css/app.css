@@ -294,3 +294,150 @@ html, body {
     .wheel-wrapper { width: 300px; height: 300px; }
     .wheel-wrapper canvas { width: 300px !important; height: 300px !important; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* ÉCRAN D'ACCUEIL                                                           */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+.welcome-screen {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 40%, rgba(200,255,87,0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 60%, rgba(255,107,204,0.05) 0%, transparent 60%),
+                var(--bg);
+}
+
+.welcome-inner {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 24px; padding: 48px 32px; max-width: 640px; width: 100%;
+    text-align: center;
+}
+
+.welcome-logo {
+    display: flex; align-items: center; gap: 12px;
+}
+.welcome-logo .logo-icon { font-size: 36px; color: var(--accent); }
+.welcome-logo .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px; font-weight: 800; letter-spacing: -1px;
+}
+
+.welcome-sub {
+    color: var(--muted); font-size: 12px;
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-top: -12px;
+}
+
+.welcome-question {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px; font-weight: 600;
+    color: var(--text); margin-top: 8px;
+}
+
+.mode-cards {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; width: 100%; margin-top: 8px;
+}
+
+.mode-card {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 28px 20px;
+    background: var(--surface);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    text-align: center;
+}
+
+.opaque-card {
+    border: 1px solid var(--border);
+}
+.opaque-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(200,255,87,0.12);
+}
+
+.watercolor-card {
+    border: 1px solid var(--border);
+}
+.watercolor-card:hover {
+    border-color: #7dd3fc;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 32px rgba(125,211,252,0.12);
+}
+
+.mode-icon   { font-size: 36px; }
+.mode-title  { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; color:var(--text); }
+.mode-desc   { font-size:11px; color:var(--muted); line-height:1.5; }
+.mode-brands {
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); opacity: 0.6;
+    border-top: 1px solid var(--border); padding-top: 10px; width: 100%;
+}
+
+/* ── Header mode badge ─────────────────────────────────────────────────── */
+.mode-badge {
+    font-size: 11px; padding: 4px 12px; border-radius: 20px;
+    font-weight: 600; letter-spacing: 1px;
+}
+.mode-badge.op { background: rgba(200,255,87,0.12); color: var(--accent); border: 1px solid var(--accent); }
+.mode-badge.wc { background: rgba(125,211,252,0.12); color: #7dd3fc;     border: 1px solid #7dd3fc; }
+
+.change-mode-btn {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    padding: 5px 14px; border-radius: 6px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.change-mode-btn:hover { border-color: var(--text); color: var(--text); }
+
+/* ══════════════════════════════════════════════════════════════════════════ */
+/* AQUARELLE — éléments spécifiques                                          */
+/* ══════════════════════════════════════════════════════════════════════════ */
+
+/* Slider eau */
+.water-slider {
+    background: linear-gradient(to right, #7dd3fc44, #7dd3fc);
+}
+.water-slider::-webkit-slider-thumb {
+    background: #7dd3fc;
+    box-shadow: 0 0 6px rgba(125,211,252,0.5);
+}
+
+/* Icônes sur les chips de palette aquarelle */
+.palette-chip { position: relative; overflow: visible; }
+.chip-icons {
+    position: absolute; bottom: 1px; right: 1px;
+    font-size: 6px; line-height: 1; color: rgba(255,255,255,0.9);
+    display: flex; gap: 1px;
+    text-shadow: 0 0 2px rgba(0,0,0,0.8);
+}
+
+/* Légende aquarelle sous la palette */
+.wc-legend {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    font-size: 9px; color: var(--muted); letter-spacing: 0.5px;
+    margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border);
+}
+
+/* Barre d'info dilution */
+.wc-info-bar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: var(--radius-sm);
+    background: rgba(125,211,252,0.07);
+    border: 1px solid rgba(125,211,252,0.2);
+    font-size: 11px; color: #7dd3fc;
+    margin-bottom: 4px;
+}
+.wc-info-icon { font-size: 14px; }
+
+/* Code pigment sous le nom de la couleur */
+.comp-details { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.comp-name    { font-size: 11px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.comp-pigment { font-size: 9px; color: #7dd3fc; letter-spacing: 0.5px; }
+
+/* Comparatif mouillé → sec en aquarelle */
+.result-compare { flex-wrap: wrap; }
