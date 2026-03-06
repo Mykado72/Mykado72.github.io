@@ -72,7 +72,7 @@ window.chromaMix = (() => {
 
         const mobile = isMobile();
         // if (mobile) return
-        const size   = mobile ? 50 : 75;
+        const size   = mobile ? 10 : 75;
         const factor = mobile ? 4  : 4;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
@@ -163,7 +163,8 @@ window.chromaMix = (() => {
         const size=130, half=size/2;
         _zCanvas.style.left = (cssX - half) + 'px';
         _zCanvas.style.top  = (cssY - half) + 'px';
-        _drawPipetteZoom(_zCanvas, cx-20, cy-20, size, 2);
+        // _drawPipetteZoom(_zCanvas, cx - 20, cy - 20, size, 2);
+        _drawPipetteZoom(_zCanvas, cx, cy, size, 2);
     }
 
     // Mobile : loupe au-dessus du doigt
@@ -182,10 +183,10 @@ window.chromaMix = (() => {
                 const fingerCssX = clientX - wr.left;
                 const fingerCssY = clientY - wr.top;
                 // Loupe décalée de -size : coin inférieur droit = doigt
-                _zCanvas.style.left = (fingerCssX - 15) + 'px';
-                _zCanvas.style.top  = (fingerCssY - 45) + 'px';
+                _zCanvas.style.left = (fingerCssX) + 'px';
+                _zCanvas.style.top  = (fingerCssY) + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
-                _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
+                _drawPipetteZoom(_zCanvas, cx, cy, size*10, 4);
             }
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;
