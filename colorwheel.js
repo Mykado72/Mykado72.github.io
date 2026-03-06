@@ -324,6 +324,9 @@ let _dotNetRef = null;
     }
 
     function _onPipetteClick(e) {
+        // Sur mobile le 'click' se declenche apres touchend — on l'ignore,
+        // la confirmation passe uniquement par le bouton "Utiliser"
+        if (e.pointerType === 'touch') return;
         const { cx, cy } = _getCssAndCanvasCoords(e.clientX, e.clientY);
         if (_dotNetRef) {
             const px = _pCtx.getImageData(Math.round(cx), Math.round(cy), 1, 1).data;
