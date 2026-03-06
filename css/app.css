@@ -31,7 +31,8 @@ html, body {
 .app-header {
     padding: 18px 32px 12px;
     border-bottom: 1px solid var(--border);
-    display: flex; align-items: baseline; gap: 20px;
+    display: flex; align-items: center; gap: 20px;
+    flex-wrap: wrap;
 }
 
 .logo { display: flex; align-items: center; gap: 8px; }
@@ -443,15 +444,10 @@ html, body {
 
 /* ── Dédicace page d'accueil ──────────────────────────────────────────────── */
 .welcome-dedication {
-    position: absolute;
-    bottom: 24px;
-    left: 0; right: 0;
-    text-align: center;
-    font-family: 'Syne', sans-serif;
-    font-size: 12px;
     color: var(--muted);
-    letter-spacing: 3px;
-    opacity: 0.55;
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin-top: -12px;
 }
 
 /* ── Comparatif côte à côte — règle unique ci-dessous ─────────────────── */
@@ -883,4 +879,19 @@ html, body {
     display: flex;
     gap: 5px;
     padding: 0;
+}
+
+/* ══ Placeholder messages desktop/mobile ════════════════════════════════════ */
+.placeholder-mobile  { display: none; }
+.placeholder-desktop { display: inline; }
+
+@media (max-width: 900px) {
+    .placeholder-mobile  { display: inline; }
+    .placeholder-desktop { display: none; }
+}
+
+/* ══ Header mobile — padding réduit ═════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .app-header { padding: 12px 16px; gap: 10px; }
+    .change-mode-btn { margin-left: auto; }
 }
