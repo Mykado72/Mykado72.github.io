@@ -91,10 +91,9 @@ window.chromaMix = (() => {
         const cssY   = cy_c * scaleY;
 
         if (mobile) {
-            // Loupe centrée horizontalement sur le doigt
-            // Bas de la loupe = position CSS du doigt
-            zoom.style.left = (cssX - half) + 'px';
-            zoom.style.top  = (cssY - size) + 'px';
+            // Coin supérieur gauche de la loupe = position du doigt
+            zoom.style.left = cssX + 'px';
+            zoom.style.top  = cssY + 'px';
         } else {
             // Desktop : loupe centrée sur le curseur
             zoom.style.left = (cssX - half) + 'px';
@@ -197,9 +196,9 @@ window.chromaMix = (() => {
                 // Position CSS du doigt dans le wrapper
                 const fingerCssX = clientX - wr.left;
                 const fingerCssY = clientY - wr.top;
-                // Loupe centrée horizontalement, bas = position du doigt
-                _zCanvas.style.left = (fingerCssX - half) + 'px';
-                _zCanvas.style.top  = (fingerCssY - size) + 'px';
+                // Coin supérieur gauche de la loupe = position du doigt
+                _zCanvas.style.left = fingerCssX + 'px';
+                _zCanvas.style.top  = fingerCssY + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
                 _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
