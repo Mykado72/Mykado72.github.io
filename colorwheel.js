@@ -165,15 +165,14 @@ window.chromaMix = (() => {
         if(!_pCtx||!_pCanvas)return null;
         _zCanvas=_zCanvas||document.getElementById('zoomCanvas');
         if(_zCanvas){
-            const wrap = _pCanvas.parentElement;
-            if(wrap){
-                const size = 132;
-                // Position fixe : coin supérieur droit du wrapper
-                _zCanvas.style.left = (wrap.offsetWidth - size - 8) + 'px';
-                _zCanvas.style.top  = '8px';
-                // Extraire depuis les coordonnées canvas du doigt
-                _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
-            }
+            const size = 132;
+            // La loupe est maintenant dans pipette-zoom-bar (hors du wrap image)
+            // Son positionnement est géré par le CSS flex — juste mettre à jour le contenu
+            _zCanvas.style.position = 'static';
+            _zCanvas.style.display  = 'block';
+            _zCanvas.style.width    = size + 'px';
+            _zCanvas.style.height   = size + 'px';
+            _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;
         return[px[0],px[1],px[2]];

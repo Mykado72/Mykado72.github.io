@@ -869,3 +869,32 @@ html, body {
     cursor: pointer;
     flex-shrink: 0;
 }
+
+/* ── Zone loupe fixe pipette (mobile) ───────────────────────────────────── */
+.pipette-zoom-bar {
+    display: none;  /* caché par défaut (desktop : loupe dans le wrap) */
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+.zoom-lens-fixed {
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    display: none;  /* visible seulement quand le doigt glisse */
+}
+.zoom-bar-hint {
+    font-size: 11px;
+    color: var(--muted);
+    flex: 1;
+}
+@media (max-width: 900px) {
+    .pipette-zoom-bar { display: flex; }
+    /* Sur mobile, pas de loupe dans le wrap */
+    .zoom-lens { display: none !important; }
+    .zoom-crosshair { display: none !important; }
+}
