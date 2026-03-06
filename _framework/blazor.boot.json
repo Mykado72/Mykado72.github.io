@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "ColorMixer",
   "resources": {
-    "hash": "sha256-pCUkX7X/LKlT5CVzWCQX1OF69i4AIihlILGWFw7Q1U8=",
+    "hash": "sha256-oE69e1zkpD6p3ZdwvIzjDfBx+AKnEhyAKOLFfm4GUk0=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -18,20 +18,23 @@
     },
     "coreAssembly": {},
     "assembly": {
-      "Microsoft.AspNetCore.Components.wasm": "sha256-/GOWkuj0ChJPuFROqEhlL7HAVepfkQ0G4+PuJEQFWK4=",
-      "Microsoft.AspNetCore.Components.Web.wasm": "sha256-SjylZFO6202G+s3G6SNI9ZR7WAIYari2CZpz99QhpvQ=",
-      "Microsoft.AspNetCore.Components.WebAssembly.wasm": "sha256-6AMBTffYH/Dro8j8tpiLhix/VXm5Rkpsi5OT5mMWvq0=",
+      "Microsoft.AspNetCore.Components.wasm": "sha256-plU1zSwgnkH8qLvlNuGfIysWztTG3lzoHOyaeNQmv24=",
+      "Microsoft.AspNetCore.Components.Web.wasm": "sha256-JvDWZ+Tk4dOTmtpE0QN7Is8HBJetwotwjiZHX4n+vPM=",
+      "Microsoft.AspNetCore.Components.WebAssembly.wasm": "sha256-UjeFpRuRStIC1rLs1hUGreir3MD9h6WFR1lBzrjjjIk=",
       "Microsoft.Extensions.Configuration.wasm": "sha256-od574rRtVVRJj+24jbl8j3GdQFpxlJOpSx+pEMw1Q18=",
       "Microsoft.Extensions.Configuration.Abstractions.wasm": "sha256-XR+WUfg8LtnrwdXFBnV+qO3ROyp6cYCfl1AZajIAheM=",
-      "Microsoft.Extensions.Configuration.Json.wasm": "sha256-3UBRwvCkKtraRUarsIBDS05tA2rRm1leCB6EDfyVjeA=",
+      "Microsoft.Extensions.Configuration.Json.wasm": "sha256-PM0DdkMMZfU5xGd6YTQyal7l0f3Esy8mzK9p0cTBGq8=",
       "Microsoft.Extensions.DependencyInjection.wasm": "sha256-mw/Sy1n9J6R0bUD0GI5MtB/zP+wyzOPiVsOTA/1C4NA=",
       "Microsoft.Extensions.DependencyInjection.Abstractions.wasm": "sha256-3uh27liDMq7A3YpTWBl95uimJWq7ESRuyOOOFlc21Ck=",
       "Microsoft.Extensions.Logging.wasm": "sha256-lronxO5RVywLbFhme/ExIuzFePlP8EosZyZteUaMAwE=",
       "Microsoft.Extensions.Logging.Abstractions.wasm": "sha256-7Zu9mf5A66dSbrtfWeqyG3c+7z4wLPxz6mRfvZWMXy8=",
       "Microsoft.Extensions.Options.wasm": "sha256-jU67Fez8pypOqHShO/C6RHAZmEFgoq4RZGZtcWXOF08=",
       "Microsoft.Extensions.Primitives.wasm": "sha256-Bi1hyBMWneH/ByWbqT/pNe0B7I/NQFklzD2g3Whdqlk=",
-      "Microsoft.JSInterop.wasm": "sha256-9Vj+DgdU6CeanQio+8MNKXJwNwoAljjUEOsk6yJlIY4=",
-      "Microsoft.JSInterop.WebAssembly.wasm": "sha256-Px6z5DU/gBGylV4ob9sdcAVH4KKxpByP7WNTn+lZUro=",
+      "Microsoft.JSInterop.wasm": "sha256-8u5XzIajoMNeT69848D/487fN8AEMk9NTxVuUU2plTs=",
+      "Microsoft.JSInterop.WebAssembly.wasm": "sha256-zjtPy1FjcQAYzxZDDAYpUIfMe0NLa4/du7x9iLoPzqg=",
+      "System.IO.Pipelines.wasm": "sha256-BHbmLIOqOwGbSJPghONWziGoCavimgD1Ytuh7r+/yJs=",
+      "System.Text.Encodings.Web.wasm": "sha256-JFoP4J8U92fZgoGRqn6hCGHlHPnDARpsmA4Nrmo/rT8=",
+      "System.Text.Json.wasm": "sha256-cXFrLsz69Q765Mbt5f1CKlod0dJhoZhHEZMK8MX9O48=",
       "System.Collections.Concurrent.wasm": "sha256-BezX8m3Ah72/s5Ag6YTEN+tx1OUDZ7RzdxZsmqVSd58=",
       "System.Collections.wasm": "sha256-z1EM8XZU+5UGlYwWv9xh5aE22uUEW7gf5YDv4Rf6VBk=",
       "System.ComponentModel.wasm": "sha256-NwdL+bCT1n5DFHznF82J+HsgMqmrgx7yfNJtf2wG9W4=",
@@ -42,12 +45,10 @@
       "System.Net.Primitives.wasm": "sha256-e/ventvhLQqSmnoLpE6k5xnK5jZzq8AOqarcjVwH6XU=",
       "System.Private.Uri.wasm": "sha256-7Jg0a0C5zq5rv8oMi37PUSR0DiT2oGem2mJv654ig+E=",
       "System.Runtime.InteropServices.JavaScript.wasm": "sha256-z96dAg2FoX+f5YJi84FrnjmI2j3/q+bOfVzNoGEaO1k=",
-      "System.Runtime.wasm": "sha256-YD3+xEBTqCDyDih2mKfzYn93LtVLkCseYMIJ4+Oz6Jo=",
-      "System.Text.Encodings.Web.wasm": "sha256-lDNhBYxzB2oWW3QF6CVQvqP8vU/iFCBV+gT4zkljouY=",
-      "System.Text.Json.wasm": "sha256-OcOFHwNFFSa7XKg2flxQxYkz9h8jq3zgYV/Hvyw4+WE=",
+      "System.Runtime.wasm": "sha256-pIU9nEaZqmJp/xHlUMf9SHHzLopse85eyiozXk7OIdk=",
       "System.Text.RegularExpressions.wasm": "sha256-EBNNP57+VS/OjAuJHOY1mCfaJCJQYORnhF3/w7wP5kI=",
-      "System.Private.CoreLib.wasm": "sha256-13sGKwb+24ep8a6ogoLWlJxECeBn3rrnj39e1xPGSew=",
-      "ColorMixer.wasm": "sha256-1BpJ3W/ZAX3Bl8MdgspseYZnROE4tFj4VU4+Qq3YXqE="
+      "System.Private.CoreLib.wasm": "sha256-AYCR5NPKvHNeOD1mKAAQGI1S14TWyluRMnGWQLXcBvo=",
+      "ColorMixer.wasm": "sha256-8kILN3va2QHbWyEhT4eFZog7l4IZZaeGw27qxiuTzK0="
     }
   },
   "cacheBootResources": true,

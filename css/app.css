@@ -301,7 +301,6 @@ html, body {
 .welcome-screen {
     min-height: 100vh;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    box-sizing: border-box;
     background: radial-gradient(ellipse at 30% 40%, rgba(200,255,87,0.06) 0%, transparent 60%),
                 radial-gradient(ellipse at 70% 60%, rgba(255,107,204,0.05) 0%, transparent 60%),
                 var(--bg);
@@ -450,9 +449,9 @@ html, body {
     text-align: center;
     font-family: 'Syne', sans-serif;
     font-size: 12px;
-    color: #c8d8e8;
-    letter-spacing: 2px;
-    opacity: 0.85;
+    color: var(--muted);
+    letter-spacing: 3px;
+    opacity: 0.55;
 }
 
 /* ── Comparatif côte à côte — règle unique ci-dessous ─────────────────── */
@@ -725,10 +724,9 @@ html, body {
     border-radius: 50%;
     pointer-events: none;
     z-index: 10;
+    transform: translate(-50%, -50%);
     box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.3);
 }
-
-
 
 .zoom-crosshair {
     position: absolute;
@@ -736,6 +734,7 @@ html, body {
     height: 120px;
     pointer-events: none;
     z-index: 11;
+    transform: translate(-50%, -50%);
 }
 
 /* Résultat pipette */
@@ -794,6 +793,12 @@ html, body {
 }
 .pipette-confirm:hover { opacity: 0.85; }
 
+/* Mobile : loupe plus grande */
+@media (max-width: 900px) {
+    .zoom-lens { width: 140px; height: 140px; }
+    .zoom-crosshair { width: 140px; height: 140px; }
+}
+
 /* ── Palette chip — états interactifs ──────────────────────────────────────── */
 .palette-chip { cursor: pointer; }
 .palette-chip:hover { transform: scale(1.18) !important; box-shadow: 0 0 0 2px rgba(255,255,255,0.5); z-index: 2; }
@@ -813,59 +818,69 @@ html, body {
     box-shadow: 0 6px 28px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.15);
 }
 
-/* ══ Page d'accueil mobile — doit être après les règles desktop ══════════════ */
+/* ══ Grille de couleurs mobile ══════════════════════════════════════════════ */
+
+/* Sur desktop : montrer l'onglet Roue, cacher Grille */
+.grid-tab-btn  { display: none; }
+.wheel-tab-btn { display: inline-flex; }
+
+/* Sur mobile : montrer l'onglet Grille, cacher Roue */
 @media (max-width: 900px) {
-    .welcome-screen {
-        min-height: 0 !important;
-        height: 100dvh;
-        overflow: hidden;
-        justify-content: flex-start;
-        padding: 0;
-    }
-    .welcome-inner {
-        flex: 1;
-        min-height: 0;
-        gap: 10px;
-        padding: 16px 20px 6px;
-        justify-content: center;
-    }
-    .welcome-logo .logo-icon { font-size: 24px; }
-    .welcome-logo .logo-text { font-size: 22px; }
-    .welcome-sub  { font-size: 10px; margin-top: -4px; }
-    .welcome-question { font-size: 14px; margin-top: 0; }
-    .mode-cards { gap: 8px; margin-top: 0; }
-    .mode-card  { padding: 12px 12px; gap: 5px; border-radius: 12px; }
-    .mode-icon  { font-size: 22px; }
-    .mode-title { font-size: 13px; }
-    .mode-desc  { font-size: 9px; }
-    .mode-brands { font-size: 8px; padding-top: 6px; }
-    .welcome-dedication {
-        position: static !important;
-        padding: 10px 0 14px;
-        font-size: 10px;
-        letter-spacing: 1px;
-        flex-shrink: 0;
+    .wheel-tab-btn { display: none; }
+    .grid-tab-btn  { display: inline-flex; }
+}
+
+/* La wheel-wrapper est visible sur desktop, cachée sur mobile via media query */
+@media (max-width: 900px) {
+    .wheel-wrapper { display: none; }
+}
+
+/* La grille est cachée sur desktop, visible sur mobile */
+.color-grid-mobile { display: none; }
+
+@media (max-width: 900px) {
+    .color-grid-mobile {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+        padding: 4px 0;
     }
 }
 
-/* ── Bouton "Utiliser" sur mobile après sélection roue ───────────────────── */
-.hover-preview-card {
-    border-color: var(--accent) !important;
-    animation: pulse-border 1s ease infinite;
+.cgrid-row {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 5px;
 }
-@keyframes pulse-border {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(200,255,87,0.3); }
-    50%       { box-shadow: 0 0 0 6px rgba(200,255,87,0); }
-}
-.use-hover-btn {
-    margin-left: auto;
-    padding: 8px 18px;
-    background: var(--accent);
-    color: #111;
-    border: none;
+
+.cgrid-tile {
+    aspect-ratio: 1;
     border-radius: 8px;
-    font-weight: 700;
-    font-size: 13px;
+    border: 2px solid transparent;
     cursor: pointer;
-    flex-shrink: 0;
+    transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+    padding: 0;
+    min-height: 44px;
+    /* Ombre subtile pour donner du relief */
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.cgrid-tile:active {
+    transform: scale(0.92);
+}
+
+.cgrid-tile.cgrid-selected {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px var(--accent), inset 0 1px 0 rgba(255,255,255,0.2);
+    transform: scale(1.08);
+    z-index: 2;
+    position: relative;
+}
+
+/* Ligne de labels de teinte (optionnel, aide visuelle) */
+.cgrid-hue-labels {
+    display: flex;
+    gap: 5px;
+    padding: 0;
 }
