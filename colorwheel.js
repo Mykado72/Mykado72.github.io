@@ -107,8 +107,8 @@ window.chromaMix = (() => {
         zc.restore();
         // Bordure
         zc.beginPath(); zc.arc(half, half, half-1, 0, Math.PI*2);
-        zc.strokeStyle='rgba(255,255,255,0.95)'; zc.lineWidth=mobile?2:3; zc.stroke();
-        zc.strokeStyle='rgba(0,0,0,0.25)'; zc.lineWidth=1; zc.stroke();
+        zc.strokeStyle='rgba(255,255,255,0.95)'; zc.lineWidth=mobile?1:3; zc.stroke();
+        if (!mobile) { zc.strokeStyle='rgba(0,0,0,0.25)'; zc.lineWidth=1; zc.stroke(); }
         // Croix (desktop uniquement)
         if (!mobile) {
             const arm = Math.max(6, Math.round(size*0.1));
