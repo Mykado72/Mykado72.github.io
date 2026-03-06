@@ -57,20 +57,23 @@ window.chromaMix = (() => {
         if(!src||!zoom)return;
         const e=wheels[srcId];if(!e)return;
         const {saturation,lightness}=e;
-        const size=isMobile()?15:130, factor=isMobile()?3:6, half=size/2, srcPx=size/factor;
+        const size=isMobile()?23:130, factor=isMobile()?3:6, half=size/2, srcPx=size/factor;
         zoom.width=size;zoom.height=size;
         zoom.style.display='block';zoom.style.width=size+'px';zoom.style.height=size+'px';
-        // Desktop : centré sur le curseur / Mobile : au-dessus du doigt
+        // Desktop: centré sur curseur / Mobile: bas du cercle au niveau du doigt
+        const topMobile = cy_c - size;  // bas de la loupe = doigt
         zoom.style.left=(cx_c-half)+'px';
-        // Mobile: bas du cercle = niveau du doigt. Desktop: centré sur curseur
-        zoom.style.top=(isMobile()?(cy_c-size):(cy_c-half))+'px';
+        zoom.style.top=(isMobile()?topMobile:(cy_c-half))+'px';
+        // Mobile: extraire depuis le centre de la loupe (pas depuis le doigt)
+        const sampleCx = isMobile() ? cx_c : cx_c;
+        const sampleCy = isMobile() ? (topMobile + half) : cy_c; // centre loupe en coords canvas
         const zc=zoom.getContext('2d');
         const img=zc.createImageData(size,size),data=img.data;
         const W=src.width,wcx=W/2,wcy=src.height/2,outerR=wcx-4;
         for(let py=0;py<size;py++) for(let px=0;px<size;px++){
             const ldx=px-half,ldy=py-half;
             if(Math.sqrt(ldx*ldx+ldy*ldy)>half)continue;
-            const wx=cx_c+ldx*(srcPx/size),wy=cy_c+ldy*(srcPx/size);
+            const wx=sampleCx+ldx*(srcPx/size),wy=sampleCy+ldy*(srcPx/size);
             const dx=wx-wcx,dy=wy-wcy,dist=Math.sqrt(dx*dx+dy*dy);
             let r,g,b;
             if(dist>outerR){r=g=b=17;}
@@ -143,10 +146,16 @@ window.chromaMix = (() => {
         if(_zCanvas&&_pCanvas){
             const wr=_pCanvas.parentElement;
             if(wr){
-                const r=wr.getBoundingClientRect(),pz=88;
-                _zCanvas.style.left=(clientX-r.left-pz/2)+'px';
-                _zCanvas.style.top=(clientY-r.top-pz-20)+'px';
-                _drawPipetteZoom(_zCanvas,cx,cy,pz,5);
+                const r=wr.getBoundingClientRect(),pz=132;
+                const lensLeft=clientX-r.left-pz/2;
+                const lensTop=clientY-r.top-pz-10; // 10px plus haut qu'avant
+                _zCanvas.style.left=lensLeft+'px';
+                _zCanvas.style.top=lensTop+'px';
+                // Centre de la loupe en coordonnées canvas
+                const scaleX=_pCanvas.width/r.width, scaleY=_pCanvas.height/r.height;
+                const lensCenterX=(lensLeft+pz/2)*scaleX;
+                const lensCenterY=(lensTop +pz/2)*scaleY;
+                _drawPipetteZoom(_zCanvas,lensCenterX,lensCenterY,pz,5);
             }
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;
