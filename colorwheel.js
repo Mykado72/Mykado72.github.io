@@ -65,15 +65,14 @@ window.chromaMix = (() => {
     // ══ LOUPE ROUE ════════════════════════════════════════════════════════════
     // cx_c / cy_c : coordonnées CANVAS internes du colorWheel
     function drawWheelZoom(srcId, zoomId, cx_c, cy_c) {
-        
         const src  = document.getElementById(srcId);
         const zoom = document.getElementById(zoomId);
         if (!src || !zoom) return;
 
         const mobile = isMobile();
-        if (mobile) return
-        const size   = mobile ? 10 : 75;
-        const factor = mobile ? 1  : 4;    // zone source = size/factor px canvas
+        if (mobile) return;  // pas de loupe sur mobile
+        const size   = 130;
+        const factor = 6;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
 
@@ -87,13 +86,8 @@ window.chromaMix = (() => {
         const cssX = cx_c * (rect.width  / src.width);
         const cssY = cy_c * (rect.height / src.height);
 
-        if (mobile) {
-            zoom.style.left = (cssX - size) + 'px';
-            zoom.style.top  = (cssY - size) + 'px';
-        } else {
-            zoom.style.left = (cssX - half) + 'px';
-            zoom.style.top  = (cssY - half) + 'px';
-        }
+        zoom.style.left = (cssX - half) + 'px';
+        zoom.style.top  = (cssY - half) + 'px';
 
         // Rendu via drawImage sur le canvas source → net, sans pixellisation
         const zc = zoom.getContext('2d');
@@ -109,18 +103,16 @@ window.chromaMix = (() => {
         zc.restore();
         // Bordure
         zc.beginPath(); zc.arc(half, half, half-1, 0, Math.PI*2);
-        zc.strokeStyle='rgba(255,255,255,0.95)'; zc.lineWidth=mobile?1:3; zc.stroke();
-        if (!mobile) { zc.strokeStyle='rgba(0,0,0,0.25)'; zc.lineWidth=1; zc.stroke(); }
-        // Croix (desktop uniquement)
-        if (!mobile) {
-            const arm = Math.max(6, Math.round(size*0.1));
-            zc.strokeStyle='rgba(255,255,255,0.9)'; zc.lineWidth=1.5;
-            zc.shadowColor='rgba(0,0,0,0.9)'; zc.shadowBlur=3;
-            zc.beginPath();
-            zc.moveTo(half-arm,half); zc.lineTo(half+arm,half);
-            zc.moveTo(half,half-arm); zc.lineTo(half,half+arm);
-            zc.stroke(); zc.shadowBlur=0;
-        }
+        zc.strokeStyle='rgba(255,255,255,0.95)'; zc.lineWidth=3; zc.stroke();
+        zc.strokeStyle='rgba(0,0,0,0.25)'; zc.lineWidth=1; zc.stroke();
+        // Croix
+        const arm = Math.max(6, Math.round(size*0.1));
+        zc.strokeStyle='rgba(255,255,255,0.9)'; zc.lineWidth=1.5;
+        zc.shadowColor='rgba(0,0,0,0.9)'; zc.shadowBlur=3;
+        zc.beginPath();
+        zc.moveTo(half-arm,half); zc.lineTo(half+arm,half);
+        zc.moveTo(half,half-arm); zc.lineTo(half,half+arm);
+        zc.stroke(); zc.shadowBlur=0;
     }
 
     function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
@@ -158,13 +150,12 @@ window.chromaMix = (() => {
         const rect   = _pCanvas.getBoundingClientRect();
         const scaleX = _pCanvas.width  / rect.width;
         const scaleY = _pCanvas.height / rect.height;
-        const cx = (cssX) * scaleX;   // coordonnées canvas réelles
-        const cy = (cssY) * scaleY;
+        const cx = cssX * scaleX;   // coordonnées canvas réelles
+        const cy = cssY * scaleY;
         const size=130, half=size/2;
         _zCanvas.style.left = (cssX - half) + 'px';
         _zCanvas.style.top  = (cssY - half) + 'px';
-        // _drawPipetteZoom(_zCanvas, cx - 20, cy - 20, size, 2);
-        _drawPipetteZoom(_zCanvas, cx, cy, size, 8);
+        _drawPipetteZoom(_zCanvas, cx, cy, size, 6);
     }
 
     // Mobile : loupe au-dessus du doigt
@@ -176,17 +167,12 @@ window.chromaMix = (() => {
         if(_zCanvas){
             const wrap = _pCanvas.parentElement;
             if(wrap){
-                const wr     = wrap.getBoundingClientRect();
-                const size   = 132;
-                const half   = size;
-                // Position CSS du doigt dans le wrapper
-                const fingerCssX = clientX - wr.left;
-                const fingerCssY = clientY - wr.top;
-                // Loupe décalée de -size : coin inférieur droit = doigt
-                _zCanvas.style.left = (fingerCssX) + 'px';
-                _zCanvas.style.top  = (fingerCssY) + 'px';
+                const size = 132;
+                // Position fixe : coin supérieur droit du wrapper
+                _zCanvas.style.left = (wrap.offsetWidth - size - 8) + 'px';
+                _zCanvas.style.top  = '8px';
                 // Extraire depuis les coordonnées canvas du doigt
-                _drawPipetteZoom(_zCanvas, cx, cy, size/10, 4);
+                _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;

@@ -291,7 +291,7 @@ html, body {
     }
     .panel { border-bottom: 1px solid var(--border); }
     .wheel-wrapper { width: 300px; height: 300px; }
-    .wheel-wrapper canvas { width: 300px !important; height: 300px !important; }
+    .wheel-wrapper canvas#colorWheel { width: 300px !important; height: 300px !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════ */
