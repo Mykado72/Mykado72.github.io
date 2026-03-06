@@ -65,13 +65,15 @@ window.chromaMix = (() => {
     // ══ LOUPE ROUE ════════════════════════════════════════════════════════════
     // cx_c / cy_c : coordonnées CANVAS internes du colorWheel
     function drawWheelZoom(srcId, zoomId, cx_c, cy_c) {
+        
         const src  = document.getElementById(srcId);
         const zoom = document.getElementById(zoomId);
         if (!src || !zoom) return;
 
         const mobile = isMobile();
-        const size   = mobile ? 22 : 130;
-        const factor = mobile ? 5  : 6;    // zone source = size/factor px canvas
+        // if (mobile) return
+        const size   = mobile ? 22 : 75;
+        const factor = mobile ? 6  : 4;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
 
@@ -156,12 +158,12 @@ window.chromaMix = (() => {
         const rect   = _pCanvas.getBoundingClientRect();
         const scaleX = _pCanvas.width  / rect.width;
         const scaleY = _pCanvas.height / rect.height;
-        const cx = cssX * scaleX;   // coordonnées canvas réelles
-        const cy = cssY * scaleY;
+        const cx = (cssX) * scaleX;   // coordonnées canvas réelles
+        const cy = (cssY) * scaleY;
         const size=130, half=size/2;
         _zCanvas.style.left = (cssX - half) + 'px';
         _zCanvas.style.top  = (cssY - half) + 'px';
-        _drawPipetteZoom(_zCanvas, cx, cy, size, 6);
+        _drawPipetteZoom(_zCanvas, cx, cy, size, 2);
     }
 
     // Mobile : loupe au-dessus du doigt
@@ -175,13 +177,13 @@ window.chromaMix = (() => {
             if(wrap){
                 const wr     = wrap.getBoundingClientRect();
                 const size   = 132;
-                const half   = size/2;
+                const half   = size;
                 // Position CSS du doigt dans le wrapper
                 const fingerCssX = clientX - wr.left;
                 const fingerCssY = clientY - wr.top;
                 // Loupe décalée de -size : coin inférieur droit = doigt
                 _zCanvas.style.left = (fingerCssX - 15) + 'px';
-                _zCanvas.style.top  = (fingerCssY - 15) + 'px';
+                _zCanvas.style.top  = (fingerCssY - 45) + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
                 _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
