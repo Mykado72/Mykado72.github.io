@@ -897,3 +897,42 @@ html, body {
     /* Sur mobile, pas de loupe dans le wrap */
     /* zoom-lens desktop reste dans le wrap — pas masqué sur mobile */
 }
+
+/* ── Grille de couleurs mobile ───────────────────────────────────────────── */
+.desktop-only { display: block; }
+.mobile-only  { display: none;  }
+
+@media (max-width: 900px) {
+    .desktop-only { display: none !important; }
+    .mobile-only  { display: block !important; }
+}
+
+.color-grid {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 0;
+}
+.color-grid-row {
+    display: flex;
+    gap: 4px;
+}
+.color-cell {
+    flex: 1;
+    aspect-ratio: 1;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.1s, border-color 0.15s;
+    min-height: 38px;
+}
+.color-cell:active {
+    transform: scale(0.92);
+}
+.color-cell.selected {
+    border-color: #fff;
+    box-shadow: 0 0 0 2px var(--accent);
+    transform: scale(1.08);
+    z-index: 1;
+}

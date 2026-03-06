@@ -3,31 +3,25 @@ window.chromaMix = (() => {
     const isMobile = () => window.innerWidth <= 900;
 
     // ══ ROUE ══════════════════════════════════════════════════════════════════
-    function drawWheel(canvasId, saturation, lightness, zoom) {
+    function drawWheel(canvasId, saturation, lightness) {
         saturation = saturation || 100; lightness = lightness || 50;
-        // Si zoom non fourni, réutiliser le zoom actuel du canvas (persistance entre redraws)
-        zoom = zoom || (wheels[canvasId] ? wheels[canvasId].zoom : 1) || 1;
         const canvas = document.getElementById(canvasId);
-        if (!canvas) { setTimeout(() => drawWheel(canvasId, saturation, lightness, zoom), 100); return; }
+        if (!canvas) { setTimeout(() => drawWheel(canvasId, saturation, lightness), 100); return; }
         const ctx = canvas.getContext('2d');
-        const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2;
-        // Rayon effectif réduit par le zoom : zoom=2 → seule la moitié centrale est visible
-        const outerR = (cx - 4) / zoom;
+        const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2, outerR = cx-4;
         const sat = saturation/100, imgData = ctx.createImageData(W,H), data = imgData.data;
         for (let y=0;y<H;y++) for (let x=0;x<W;x++) {
-            // Coordonnée dans l'espace "roue réelle" (zoom appliqué)
-            const rx = (x - cx) / zoom, ry = (y - cy) / zoom;
-            const dist = Math.sqrt(rx*rx + ry*ry);
-            if (dist > outerR) continue;
-            let hue = Math.atan2(ry, rx)*180/Math.PI+90; if(hue<0) hue+=360;
-            const t = dist / outerR;
+            const dx=x-cx, dy=y-cy, dist=Math.sqrt(dx*dx+dy*dy);
+            if (dist>outerR) continue;
+            let hue=Math.atan2(dy,dx)*180/Math.PI+90; if(hue<0) hue+=360;
+            const t=dist/outerR;
             const lum=t<0.35 ? 95-(95-lightness)*(t/0.35) : lightness-(lightness-Math.max(5,lightness-28))*((t-0.35)/0.65);
             const [r,g,b]=hslToRgb(hue/360,sat,lum/100);
             const idx=(y*W+x)*4; data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
         }
         ctx.putImageData(imgData,0,0);
         ctx.beginPath();ctx.arc(cx,cy,3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fill();
-        wheels[canvasId]={canvas,saturation,lightness,zoom};
+        wheels[canvasId]={canvas,saturation,lightness};
     }
 
     function hslToRgb(h,s,l){
@@ -59,12 +53,10 @@ window.chromaMix = (() => {
 
     function getColorAt(id,x,y){
         const c=(wheels[id]||{}).canvas||document.getElementById(id);if(!c)return null;
-        const e=wheels[id], lt=e?e.lightness:50, zoom=e?e.zoom:1;
-        const cx=c.width/2, cy=c.height/2;
-        const rx=(x-cx)/zoom, ry=(y-cy)/zoom;  // coords dans espace roue réelle
-        const dist=Math.sqrt(rx*rx+ry*ry), outerR=(cx-4)/zoom;
+        const e=wheels[id],lt=e?e.lightness:50;
+        const cx=c.width/2,cy=c.height/2,dx=x-cx,dy=y-cy,dist=Math.sqrt(dx*dx+dy*dy),outerR=cx-4;
         if(dist>outerR)return null;
-        let hue=Math.atan2(ry,rx)*180/Math.PI+90;if(hue<0)hue+=360;
+        let hue=Math.atan2(dy,dx)*180/Math.PI+90;if(hue<0)hue+=360;
         const t=dist/outerR;
         const lum=t<0.35?95-(95-lt)*(t/0.35):lt-(lt-Math.max(5,lt-28))*((t-0.35)/0.65);
         return{hue:hue,lum:Math.round(lum)};
@@ -123,21 +115,6 @@ window.chromaMix = (() => {
         zc.stroke(); zc.shadowBlur=0;
     }
 
-    // ══ PINCH-TO-ZOOM ROUE (natif JS, pas via Blazor) ════════════════════════
-    function initWheelPinch() {
-        const canvas = document.getElementById('colorWheel');
-        if (!canvas || canvas._pinchInit) return;
-        canvas._pinchInit = true;
-        let startDist = 0, startZoom = 1;
-
-        canvas.addEventListener('touchstart', e => {
-            if (e.touches.length === 2) {
-                const dx = e.touches[1].clientX - e.touches[0].clientX;
-                const dy = e.touches[1].clientY - e.touches[0].clientY;
-                startDist = Math.sqrt(dx*dx + dy*dy);
-                startZoom = (wheels['colorWheel'] || {}).zoom || 1;
-                e.preventDefault();
-            }
         }, { passive: false });
 
         canvas.addEventListener('touchmove', e => {
@@ -281,7 +258,7 @@ window.chromaMix = (() => {
 
     return{
         drawWheel, pickPixel, getHueAt, getColorAt, isMobileView,
-        drawWheelZoom, hideWheelZoom, initWheelPinch,
+        drawWheelZoom, hideWheelZoom,
         loadPipetteFromDataUrl, pipettePreview, pipettePickColor, pipetteTouchPreview, hidePipetteZoom,
         getCanvasOffset, scrollToResults, updateHslThumbs
     };
