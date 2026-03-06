@@ -70,7 +70,7 @@ window.chromaMix = (() => {
         if (!src || !zoom) return;
 
         const mobile = isMobile();
-        const size   = mobile ? 44 : 130;
+        const size   = mobile ? 22 : 130;
         const factor = mobile ? 5  : 6;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
@@ -109,14 +109,16 @@ window.chromaMix = (() => {
         zc.beginPath(); zc.arc(half, half, half-1, 0, Math.PI*2);
         zc.strokeStyle='rgba(255,255,255,0.95)'; zc.lineWidth=mobile?2:3; zc.stroke();
         zc.strokeStyle='rgba(0,0,0,0.25)'; zc.lineWidth=1; zc.stroke();
-        // Croix
-        const arm = Math.max(6, Math.round(size*0.1));
-        zc.strokeStyle='rgba(255,255,255,0.9)'; zc.lineWidth=1.5;
-        zc.shadowColor='rgba(0,0,0,0.9)'; zc.shadowBlur=3;
-        zc.beginPath();
-        zc.moveTo(half-arm,half); zc.lineTo(half+arm,half);
-        zc.moveTo(half,half-arm); zc.lineTo(half,half+arm);
-        zc.stroke(); zc.shadowBlur=0;
+        // Croix (desktop uniquement)
+        if (!mobile) {
+            const arm = Math.max(6, Math.round(size*0.1));
+            zc.strokeStyle='rgba(255,255,255,0.9)'; zc.lineWidth=1.5;
+            zc.shadowColor='rgba(0,0,0,0.9)'; zc.shadowBlur=3;
+            zc.beginPath();
+            zc.moveTo(half-arm,half); zc.lineTo(half+arm,half);
+            zc.moveTo(half,half-arm); zc.lineTo(half,half+arm);
+            zc.stroke(); zc.shadowBlur=0;
+        }
     }
 
     function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
