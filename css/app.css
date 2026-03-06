@@ -291,7 +291,7 @@ html, body {
     }
     .panel { border-bottom: 1px solid var(--border); }
     .wheel-wrapper { width: 300px; height: 300px; }
-    .wheel-wrapper canvas#colorWheel { width: 300px !important; height: 300px !important; }
+    .wheel-wrapper canvas { width: 300px !important; height: 300px !important; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════ */
@@ -806,11 +806,14 @@ html, body {
 /* ══ Loupe roue chromatique ══════════════════════════════════════════════════ */
 .wheel-zoom-canvas {
     position: absolute;
+    width: 130px;
+    height: 130px;
     border-radius: 50%;
     pointer-events: none;
     z-index: 20;
     display: none;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    /* box-shadow pour l'effet loupe */
+    box-shadow: 0 6px 28px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.15);
 }
 
 /* ══ Page d'accueil mobile — doit être après les règles desktop ══════════════ */
@@ -846,93 +849,4 @@ html, body {
         letter-spacing: 1px;
         flex-shrink: 0;
     }
-}
-
-/* ── Bouton "Utiliser" sur mobile après sélection roue ───────────────────── */
-.hover-preview-card {
-    border-color: var(--accent) !important;
-    animation: pulse-border 1s ease infinite;
-}
-@keyframes pulse-border {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(200,255,87,0.3); }
-    50%       { box-shadow: 0 0 0 6px rgba(200,255,87,0); }
-}
-.use-hover-btn {
-    margin-left: auto;
-    padding: 8px 18px;
-    background: var(--accent);
-    color: #111;
-    border: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    flex-shrink: 0;
-}
-
-/* ── Zone loupe fixe pipette (mobile) ───────────────────────────────────── */
-.pipette-zoom-bar {
-    display: none;  /* caché par défaut (desktop : loupe dans le wrap) */
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 8px;
-}
-.zoom-lens-fixed {
-    border-radius: 50%;
-    flex-shrink: 0;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.5);
-    display: none;  /* visible seulement quand le doigt glisse */
-}
-.zoom-bar-hint {
-    font-size: 11px;
-    color: var(--muted);
-    flex: 1;
-}
-@media (max-width: 900px) {
-    .pipette-zoom-bar { display: flex; }
-    /* Sur mobile, pas de loupe dans le wrap */
-    /* zoom-lens desktop reste dans le wrap — pas masqué sur mobile */
-}
-
-/* ── Grille de couleurs mobile ───────────────────────────────────────────── */
-.desktop-only { display: block; }
-.mobile-only  { display: none;  }
-
-@media (max-width: 900px) {
-    .desktop-only { display: none !important; }
-    .mobile-only  { display: block !important; }
-}
-
-.color-grid {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 4px 0;
-}
-.color-grid-row {
-    display: flex;
-    gap: 4px;
-}
-.color-cell {
-    flex: 1;
-    aspect-ratio: 1;
-    border-radius: 6px;
-    cursor: pointer;
-    border: 2px solid transparent;
-    transition: transform 0.1s, border-color 0.15s;
-    min-height: 38px;
-}
-.color-cell:active {
-    transform: scale(0.92);
-}
-.color-cell.selected {
-    border-color: #fff;
-    box-shadow: 0 0 0 2px var(--accent);
-    transform: scale(1.08);
-    z-index: 1;
 }
