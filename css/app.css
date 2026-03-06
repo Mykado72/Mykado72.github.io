@@ -728,6 +728,8 @@ html, body {
     box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 0 2px rgba(255,255,255,0.3);
 }
 
+
+
 .zoom-crosshair {
     position: absolute;
     width: 120px;
@@ -791,11 +793,6 @@ html, body {
     letter-spacing: 0.5px;
 }
 .pipette-confirm:hover { opacity: 0.85; }
-
-/* Mobile : loupe plus grande */
-@media (max-width: 900px) {
-    .zoom-lens { width: 44px !important; height: 44px !important; border-radius: 50%; }
-}
 
 /* ── Palette chip — états interactifs ──────────────────────────────────────── */
 .palette-chip { cursor: pointer; }

@@ -74,8 +74,8 @@ window.chromaMix = (() => {
         const {saturation, lightness} = e;
 
         const mobile = isMobile();
-        const size   = mobile ? 30 : 130;   // mobile: petit cercle net
-        const factor = mobile ? 8  : 6;    // factor élevé = moins de pixels source = plus net
+        const size   = mobile ? 60 : 60;   // mobile: petit cercle net
+        const factor = mobile ? 8 : 8;    // factor élevé = moins de pixels source = plus net
         const half   = size / 2;
 
         zoom.width  = size; zoom.height = size;
@@ -93,8 +93,11 @@ window.chromaMix = (() => {
         if (mobile) {
             // Loupe décalée de -size : coin inférieur droit = doigt
             // Coin inférieur droit = doigt
-            zoom.style.left = (cssX - size) + 'px';
-            zoom.style.top  = (cssY - size) + 'px';
+            // zoom.style.left = (cssX - size) + 'px';
+            // zoom.style.top  = (cssY - size) + 'px';
+            zoom.style.left = (cssX - half) + 'px';
+            zoom.style.top  = (cssY - half) + 'px';
+
         } else {
             // Desktop : loupe centrée sur le curseur
             zoom.style.left = (cssX - half) + 'px';
@@ -124,19 +127,28 @@ window.chromaMix = (() => {
             }
             const idx=(py*size+px)*4; data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
         }
-        zc.putImageData(img,0,0);
-        // Bordure
-        zc.beginPath();zc.arc(half,half,half-1,0,Math.PI*2);
-        zc.strokeStyle='rgba(255,255,255,0.95)';zc.lineWidth=mobile?2:3;zc.stroke();
-        zc.strokeStyle='rgba(0,0,0,0.25)';zc.lineWidth=1;zc.stroke();
+        zc.putImageData(img, 0, 0);
+        if (!mobile) {
+            // Bordure
+            zc.beginPath(); zc.arc(half, half, half - 1, 0, Math.PI * 2);
+            zc.strokeStyle = 'rgba(255,255,255,0.95)'; zc.lineWidth = 3; zc.stroke();
+            zc.strokeStyle = 'rgba(0,0,0,0.25)'; zc.lineWidth = 1; zc.stroke();
+        }
+        else {
+            // Bordure
+            zc.beginPath(); zc.arc(half, half, half - 1, 0, Math.PI * 2);
+            zc.strokeStyle = 'rgba(255,255,255,0.95)'; zc.lineWidth = 1; zc.stroke();
+            zc.strokeStyle = 'rgba(0,0,0,0.25)'; zc.lineWidth = 1; zc.stroke();
+        }
+
         // Croix
-        const arm=Math.max(6,Math.round(size*0.1));
+        /* const arm=Math.max(6,Math.round(size*0.1));
         zc.strokeStyle='rgba(255,255,255,0.9)';zc.lineWidth=1.5;
         zc.shadowColor='rgba(0,0,0,0.9)';zc.shadowBlur=3;
         zc.beginPath();
         zc.moveTo(half-arm,half);zc.lineTo(half+arm,half);
         zc.moveTo(half,half-arm);zc.lineTo(half,half+arm);
-        zc.stroke();zc.shadowBlur=0;
+        zc.stroke();zc.shadowBlur=0 */
     }
 
     function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
@@ -179,7 +191,7 @@ window.chromaMix = (() => {
         const size=130, half=size/2;
         _zCanvas.style.left = (cssX - half) + 'px';
         _zCanvas.style.top  = (cssY - half) + 'px';
-        _drawPipetteZoom(_zCanvas, cx, cy, size, 6);
+        _drawPipetteZoom(_zCanvas, cx, cy, size, 3);
     }
 
     // Mobile : loupe au-dessus du doigt
@@ -192,14 +204,14 @@ window.chromaMix = (() => {
             const wrap = _pCanvas.parentElement;
             if(wrap){
                 const wr     = wrap.getBoundingClientRect();
-                const size   = 132;
+                const size   = 32;
                 const half   = size/2;
                 // Position CSS du doigt dans le wrapper
                 const fingerCssX = clientX - wr.left;
                 const fingerCssY = clientY - wr.top;
-                // Loupe décalée de -size : coin inférieur droit = doigt
-                _zCanvas.style.left = (fingerCssX - 15) + 'px';
-                _zCanvas.style.top  = (fingerCssY - 15) + 'px';
+
+                _zCanvas.style.left = (fingerCssX) + 'px';
+                _zCanvas.style.top  = (fingerCssY) + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
                 _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
@@ -226,6 +238,7 @@ window.chromaMix = (() => {
         ctx.save();
         ctx.beginPath();ctx.arc(half,half,half-2,0,Math.PI*2);ctx.clip();
         ctx.imageSmoothingEnabled=false;
+
         ctx.drawImage(_pCanvas, x-src/2, y-src/2, src, src, 0, 0, size, size);
         ctx.restore();
         ctx.beginPath();ctx.arc(half,half,half-2,0,Math.PI*2);
