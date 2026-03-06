@@ -72,7 +72,7 @@ window.chromaMix = (() => {
 
         const mobile = isMobile();
         // if (mobile) return
-        const size   = mobile ? 2 : 75;
+        const size   = mobile ? 15 : 75;
         const factor = mobile ? 2  : 4;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
@@ -163,7 +163,7 @@ window.chromaMix = (() => {
         const size=130, half=size/2;
         _zCanvas.style.left = (cssX - half) + 'px';
         _zCanvas.style.top  = (cssY - half) + 'px';
-        _drawPipetteZoom(_zCanvas, cx, cy, size, 2);
+        _drawPipetteZoom(_zCanvas, cx-20, cy-20, size, 2);
     }
 
     // Mobile : loupe au-dessus du doigt
