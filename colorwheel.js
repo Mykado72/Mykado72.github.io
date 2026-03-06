@@ -2,6 +2,7 @@ window.chromaMix = (() => {
     const wheels = {};
     const isMobile = () => window.innerWidth <= 900;
 
+    // ══ ROUE ══════════════════════════════════════════════════════════════════
     function drawWheel(canvasId, saturation, lightness) {
         saturation = saturation || 100; lightness = lightness || 50;
         const canvas = document.getElementById(canvasId);
@@ -36,9 +37,19 @@ window.chromaMix = (() => {
         return Math.round(p*255);
     }
 
-    function pickPixel(id,x,y){const c=(wheels[id]||{}).canvas||document.getElementById(id);if(!c)return null;const d=c.getContext('2d').getImageData(Math.round(x),Math.round(y),1,1).data;return[d[0],d[1],d[2],d[3]];}
+    function pickPixel(id,x,y){
+        const c=(wheels[id]||{}).canvas||document.getElementById(id);
+        if(!c)return null;
+        const d=c.getContext('2d').getImageData(Math.round(x),Math.round(y),1,1).data;
+        return[d[0],d[1],d[2],d[3]];
+    }
 
-    function getHueAt(id,x,y){const c=(wheels[id]||{}).canvas||document.getElementById(id);if(!c)return -1;const cx=c.width/2,cy=c.height/2,dx=x-cx,dy=y-cy,dist=Math.sqrt(dx*dx+dy*dy);if(dist>cx-4)return -1;let a=Math.atan2(dy,dx)*180/Math.PI+90;if(a<0)a+=360;return a;}
+    function getHueAt(id,x,y){
+        const c=(wheels[id]||{}).canvas||document.getElementById(id);if(!c)return -1;
+        const cx=c.width/2,cy=c.height/2,dx=x-cx,dy=y-cy,dist=Math.sqrt(dx*dx+dy*dy);
+        if(dist>cx-4)return -1;
+        let a=Math.atan2(dy,dx)*180/Math.PI+90;if(a<0)a+=360;return a;
+    }
 
     function getColorAt(id,x,y){
         const c=(wheels[id]||{}).canvas||document.getElementById(id);if(!c)return null;
@@ -51,55 +62,87 @@ window.chromaMix = (() => {
         return{hue:hue,lum:Math.round(lum)};
     }
 
-    // ══ LOUPE ROUE (desktop 130px×6 / mobile 44px×4) ═════════════════════════
-    function drawWheelZoom(srcId,zoomId,cx_c,cy_c){
-        const src=document.getElementById(srcId),zoom=document.getElementById(zoomId);
-        if(!src||!zoom)return;
-        const e=wheels[srcId];if(!e)return;
-        const {saturation,lightness}=e;
-        const size=isMobile()?23:130, factor=isMobile()?3:6, half=size/2, srcPx=size/factor;
-        zoom.width=size;zoom.height=size;
-        zoom.style.display='block';zoom.style.width=size+'px';zoom.style.height=size+'px';
-        // Desktop: centré sur curseur / Mobile: bas du cercle au niveau du doigt
-        const topMobile = cy_c - size;  // bas de la loupe = doigt
-        zoom.style.left=(cx_c-half)+'px';
-        zoom.style.top=(isMobile()?topMobile:(cy_c-half))+'px';
-        // Mobile: extraire depuis le centre de la loupe (pas depuis le doigt)
-        const sampleCx = isMobile() ? cx_c : cx_c;
-        const sampleCy = isMobile() ? (topMobile + half) : cy_c; // centre loupe en coords canvas
-        const zc=zoom.getContext('2d');
-        const img=zc.createImageData(size,size),data=img.data;
-        const W=src.width,wcx=W/2,wcy=src.height/2,outerR=wcx-4;
-        for(let py=0;py<size;py++) for(let px=0;px<size;px++){
-            const ldx=px-half,ldy=py-half;
-            if(Math.sqrt(ldx*ldx+ldy*ldy)>half)continue;
-            const wx=sampleCx+ldx*(srcPx/size),wy=sampleCy+ldy*(srcPx/size);
-            const dx=wx-wcx,dy=wy-wcy,dist=Math.sqrt(dx*dx+dy*dy);
+    // ══ LOUPE ROUE ════════════════════════════════════════════════════════════
+    // cx_c / cy_c : coordonnées CANVAS (px internes du canvas colorWheel)
+    // Le zoom canvas est positionné en CSS dans wheel-wrapper (position:relative)
+    // → il faut convertir les coords canvas → coords CSS du wrapper
+    function drawWheelZoom(srcId, zoomId, cx_c, cy_c) {
+        const src  = document.getElementById(srcId);
+        const zoom = document.getElementById(zoomId);
+        if (!src || !zoom) return;
+        const e = wheels[srcId]; if (!e) return;
+        const {saturation, lightness} = e;
+
+        const mobile = isMobile();
+        const size   = mobile ? 88 : 130;   // mobile: même taille que pipette
+        const factor = mobile ? 5  : 6;
+        const half   = size / 2;
+
+        zoom.width  = size; zoom.height = size;
+        zoom.style.display = 'block';
+        zoom.style.width   = size + 'px';
+        zoom.style.height  = size + 'px';
+
+        // Convertir coordonnées canvas → coordonnées CSS dans le wrapper
+        const rect   = src.getBoundingClientRect();
+        const scaleX = rect.width  / src.width;
+        const scaleY = rect.height / src.height;
+        const cssX   = cx_c * scaleX;  // position CSS du doigt/curseur dans le wrapper
+        const cssY   = cy_c * scaleY;
+
+        if (mobile) {
+            // Loupe centrée horizontalement sur le doigt
+            // Bas de la loupe = position CSS du doigt
+            zoom.style.left = (cssX - half) + 'px';
+            zoom.style.top  = (cssY - size) + 'px';
+        } else {
+            // Desktop : loupe centrée sur le curseur
+            zoom.style.left = (cssX - half) + 'px';
+            zoom.style.top  = (cssY - half) + 'px';
+        }
+
+        // Rendu pixel-par-pixel depuis cx_c/cy_c (coords canvas)
+        const zc  = zoom.getContext('2d');
+        const img = zc.createImageData(size, size), data = img.data;
+        const wcx = src.width/2, wcy = src.height/2, outerR = wcx-4;
+        const srcPx = size / factor;  // nb pixels canvas couverts par la loupe
+
+        for (let py=0; py<size; py++) for (let px=0; px<size; px++) {
+            const ldx=px-half, ldy=py-half;
+            if (Math.sqrt(ldx*ldx+ldy*ldy) > half) continue;
+            // Coordonnée canvas correspondante à ce pixel de la loupe
+            const wx = cx_c + ldx * (srcPx/size);
+            const wy = cy_c + ldy * (srcPx/size);
+            const dx=wx-wcx, dy=wy-wcy, dist=Math.sqrt(dx*dx+dy*dy);
             let r,g,b;
-            if(dist>outerR){r=g=b=17;}
-            else{
-                let hue=Math.atan2(dy,dx)*180/Math.PI+90;if(hue<0)hue+=360;
+            if (dist > outerR) { r=g=b=17; }
+            else {
+                let hue=Math.atan2(dy,dx)*180/Math.PI+90; if(hue<0) hue+=360;
                 const t=dist/outerR;
                 const lum=t<0.35?95-(95-lightness)*(t/0.35):lightness-(lightness-Math.max(5,lightness-28))*((t-0.35)/0.65);
                 [r,g,b]=hslToRgb(hue/360,saturation/100,lum/100);
             }
-            const idx=(py*size+px)*4;data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
+            const idx=(py*size+px)*4; data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
         }
         zc.putImageData(img,0,0);
+        // Bordure
         zc.beginPath();zc.arc(half,half,half-1,0,Math.PI*2);
-        zc.strokeStyle='rgba(255,255,255,0.95)';zc.lineWidth=isMobile()?1.5:3;zc.stroke();
+        zc.strokeStyle='rgba(255,255,255,0.95)';zc.lineWidth=mobile?2:3;zc.stroke();
         zc.strokeStyle='rgba(0,0,0,0.25)';zc.lineWidth=1;zc.stroke();
-        const arm=Math.max(4,Math.round(size*0.11));
-        zc.strokeStyle='rgba(255,255,255,0.9)';zc.lineWidth=isMobile()?1:1.5;
+        // Croix
+        const arm=Math.max(6,Math.round(size*0.1));
+        zc.strokeStyle='rgba(255,255,255,0.9)';zc.lineWidth=1.5;
         zc.shadowColor='rgba(0,0,0,0.9)';zc.shadowBlur=3;
-        zc.beginPath();zc.moveTo(half-arm,half);zc.lineTo(half+arm,half);zc.moveTo(half,half-arm);zc.lineTo(half,half+arm);
+        zc.beginPath();
+        zc.moveTo(half-arm,half);zc.lineTo(half+arm,half);
+        zc.moveTo(half,half-arm);zc.lineTo(half,half+arm);
         zc.stroke();zc.shadowBlur=0;
     }
 
     function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
 
     // ══ PIPETTE ═══════════════════════════════════════════════════════════════
-    let _pCtx=null,_pCanvas=null,_zCanvas=null;
+    let _pCtx=null, _pCanvas=null, _zCanvas=null;
 
     function loadPipetteFromDataUrl(dataUrl,dotNetRef){
         const img=new Image();
@@ -113,7 +156,7 @@ window.chromaMix = (() => {
         _zCanvas=document.getElementById('zoomCanvas');
         if(!_pCanvas&&n>0){setTimeout(()=>tryDraw(img,dataUrl,dotNetRef,n-1),150);return;}
         if(!_pCanvas){console.warn('pipetteCanvas introuvable');return;}
-        const wrap=_pCanvas.parentElement,maxW=wrap?(wrap.offsetWidth||340):340;
+        const wrap=_pCanvas.parentElement, maxW=wrap?(wrap.offsetWidth||340):340;
         const scale=Math.min(1,maxW/img.naturalWidth);
         _pCanvas.width=Math.round(img.naturalWidth*scale);
         _pCanvas.height=Math.round(img.naturalHeight*scale);
@@ -122,48 +165,50 @@ window.chromaMix = (() => {
         dotNetRef.invokeMethodAsync('OnPipetteImageReady',dataUrl);
     }
 
-    // Desktop : loupe suit la souris (sans retourner la couleur)
-    function pipettePreview(cssX,cssY){
+    // Desktop : loupe centrée sur le curseur, lit les pixels sous le curseur
+    // cssX/cssY = OffsetX/Y de Blazor (coordonnées CSS relatives au canvas affiché)
+    function pipettePreview(cssX, cssY){
         if(!_pCtx||!_pCanvas)return;
         _zCanvas=_zCanvas||document.getElementById('zoomCanvas');
         if(!_zCanvas)return;
-        // Ratio CSS → canvas (car le canvas est affiché en width:100%)
-        const rect=_pCanvas.getBoundingClientRect();
-        const scaleX=_pCanvas.width/rect.width;
-        const scaleY=_pCanvas.height/rect.height;
-        const cx=cssX*scaleX, cy=cssY*scaleY; // coords canvas réelles
-        const size=130,half=size/2;
-        // Positionner en coordonnées CSS (affichage)
-        _zCanvas.style.left=(cssX-half)+'px';
-        _zCanvas.style.top=(cssY-half)+'px';
-        _drawPipetteZoom(_zCanvas,cx,cy,size,6);
+        const rect   = _pCanvas.getBoundingClientRect();
+        const scaleX = _pCanvas.width  / rect.width;
+        const scaleY = _pCanvas.height / rect.height;
+        const cx = cssX * scaleX;   // coordonnées canvas réelles
+        const cy = cssY * scaleY;
+        const size=130, half=size/2;
+        _zCanvas.style.left = (cssX - half) + 'px';
+        _zCanvas.style.top  = (cssY - half) + 'px';
+        _drawPipetteZoom(_zCanvas, cx, cy, size, 6);
     }
 
-    // Mobile : loupe au-dessus du doigt + retourne la couleur
-    function pipetteTouchPreview(cx,cy,clientX,clientY){
-        if(!_pCtx)return null;
+    // Mobile : loupe au-dessus du doigt
+    // cx/cy = coordonnées canvas (déjà converties par getCanvasOffset dans Blazor)
+    // clientX/clientY = position écran du doigt
+    function pipetteTouchPreview(cx, cy, clientX, clientY){
+        if(!_pCtx||!_pCanvas)return null;
         _zCanvas=_zCanvas||document.getElementById('zoomCanvas');
-        if(_zCanvas&&_pCanvas){
-            const wr=_pCanvas.parentElement;
-            if(wr){
-                const r=wr.getBoundingClientRect(),pz=132;
-                const lensLeft=clientX-r.left-pz/2;
-                const lensTop=clientY-r.top-pz-10; // 10px plus haut qu'avant
-                _zCanvas.style.left=lensLeft+'px';
-                _zCanvas.style.top=lensTop+'px';
-                // Centre de la loupe en coordonnées canvas
-                const scaleX=_pCanvas.width/r.width, scaleY=_pCanvas.height/r.height;
-                const lensCenterX=(lensLeft+pz/2)*scaleX;
-                const lensCenterY=(lensTop +pz/2)*scaleY;
-                _drawPipetteZoom(_zCanvas,lensCenterX,lensCenterY,pz,5);
+        if(_zCanvas){
+            const wrap = _pCanvas.parentElement;
+            if(wrap){
+                const wr     = wrap.getBoundingClientRect();
+                const size   = 132;
+                const half   = size/2;
+                // Position CSS du doigt dans le wrapper
+                const fingerCssX = clientX - wr.left;
+                const fingerCssY = clientY - wr.top;
+                // Loupe centrée horizontalement, bas = position du doigt
+                _zCanvas.style.left = (fingerCssX - half) + 'px';
+                _zCanvas.style.top  = (fingerCssY - size) + 'px';
+                // Extraire depuis les coordonnées canvas du doigt
+                _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;
         return[px[0],px[1],px[2]];
     }
 
-    // Retourne [R,G,B] du pixel — utilisé par le clic desktop (cssX/Y → canvas)
-    function pipettePickColor(cssX,cssY){
+    function pipettePickColor(cssX, cssY){
         if(!_pCtx||!_pCanvas)return null;
         const rect=_pCanvas.getBoundingClientRect();
         const cx=cssX*(_pCanvas.width/rect.width);
@@ -172,22 +217,25 @@ window.chromaMix = (() => {
         return[px[0],px[1],px[2]];
     }
 
-    function _drawPipetteZoom(zc,x,y,size,factor){
-        const half=size/2,src=size/factor;
-        zc.width=size;zc.height=size;
-        zc.style.display='block';zc.style.width=size+'px';zc.style.height=size+'px';
+    function _drawPipetteZoom(zc, x, y, size, factor){
+        const half=size/2, src=size/factor;
+        zc.width=size; zc.height=size;
+        zc.style.display='block'; zc.style.width=size+'px'; zc.style.height=size+'px';
         const ctx=zc.getContext('2d');
         ctx.clearRect(0,0,size,size);
-        ctx.save();ctx.beginPath();ctx.arc(half,half,half-2,0,Math.PI*2);ctx.clip();
+        ctx.save();
+        ctx.beginPath();ctx.arc(half,half,half-2,0,Math.PI*2);ctx.clip();
         ctx.imageSmoothingEnabled=false;
-        ctx.drawImage(_pCanvas,x-src/2,y-src/2,src,src,0,0,size,size);
+        ctx.drawImage(_pCanvas, x-src/2, y-src/2, src, src, 0, 0, size, size);
         ctx.restore();
         ctx.beginPath();ctx.arc(half,half,half-2,0,Math.PI*2);
-        ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=size<60?1.5:2.5;ctx.stroke();
-        const arm=Math.max(4,Math.round(size*0.08));
-        ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=size<60?1:1.5;
+        ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=2.5;ctx.stroke();
+        const arm=Math.max(6,Math.round(size*0.08));
+        ctx.strokeStyle='rgba(255,255,255,0.9)';ctx.lineWidth=1.5;
         ctx.shadowColor='rgba(0,0,0,0.8)';ctx.shadowBlur=2;
-        ctx.beginPath();ctx.moveTo(half-arm,half);ctx.lineTo(half+arm,half);ctx.moveTo(half,half-arm);ctx.lineTo(half,half+arm);
+        ctx.beginPath();
+        ctx.moveTo(half-arm,half);ctx.lineTo(half+arm,half);
+        ctx.moveTo(half,half-arm);ctx.lineTo(half,half+arm);
         ctx.stroke();ctx.shadowBlur=0;
     }
 
@@ -214,12 +262,14 @@ window.chromaMix = (() => {
             t.style.setProperty('--thumb-pct',((+i.value-+i.min)/(+i.max-+i.min))*100+'%');
         });
     }
-    document.addEventListener('input',e=>{if(e.target&&e.target.classList.contains('hsl-input'))updateHslThumbs();});
+    document.addEventListener('input',e=>{
+        if(e.target&&e.target.classList.contains('hsl-input'))updateHslThumbs();
+    });
 
     return{
-        drawWheel,pickPixel,getHueAt,getColorAt,
-        drawWheelZoom,hideWheelZoom,
-        loadPipetteFromDataUrl,pipettePreview,pipettePickColor,pipetteTouchPreview,hidePipetteZoom,
-        getCanvasOffset,scrollToResults,updateHslThumbs
+        drawWheel, pickPixel, getHueAt, getColorAt,
+        drawWheelZoom, hideWheelZoom,
+        loadPipetteFromDataUrl, pipettePreview, pipettePickColor, pipetteTouchPreview, hidePipetteZoom,
+        getCanvasOffset, scrollToResults, updateHslThumbs
     };
 })();
