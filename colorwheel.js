@@ -57,12 +57,13 @@ window.chromaMix = (() => {
         if(!src||!zoom)return;
         const e=wheels[srcId];if(!e)return;
         const {saturation,lightness}=e;
-        const size=isMobile()?44:130, factor=isMobile()?4:6, half=size/2, srcPx=size/factor;
+        const size=isMobile()?15:130, factor=isMobile()?3:6, half=size/2, srcPx=size/factor;
         zoom.width=size;zoom.height=size;
         zoom.style.display='block';zoom.style.width=size+'px';zoom.style.height=size+'px';
         // Desktop : centré sur le curseur / Mobile : au-dessus du doigt
         zoom.style.left=(cx_c-half)+'px';
-        zoom.style.top=(isMobile()?(cy_c-size-8):(cy_c-half))+'px';
+        // Mobile: bas du cercle = niveau du doigt. Desktop: centré sur curseur
+        zoom.style.top=(isMobile()?(cy_c-size):(cy_c-half))+'px';
         const zc=zoom.getContext('2d');
         const img=zc.createImageData(size,size),data=img.data;
         const W=src.width,wcx=W/2,wcy=src.height/2,outerR=wcx-4;
@@ -142,10 +143,10 @@ window.chromaMix = (() => {
         if(_zCanvas&&_pCanvas){
             const wr=_pCanvas.parentElement;
             if(wr){
-                const r=wr.getBoundingClientRect(),pz=44;
+                const r=wr.getBoundingClientRect(),pz=88;
                 _zCanvas.style.left=(clientX-r.left-pz/2)+'px';
-                _zCanvas.style.top=(clientY-r.top-pz-8)+'px';
-                _drawPipetteZoom(_zCanvas,cx,cy,pz,4);
+                _zCanvas.style.top=(clientY-r.top-pz-20)+'px';
+                _drawPipetteZoom(_zCanvas,cx,cy,pz,5);
             }
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;
