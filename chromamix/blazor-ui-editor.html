@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blazor UI Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --panel: #1a1d28;
+    --border: #252836;
+    --accent: #7c6cfc;
+    --accent2: #00d4aa;
+    --accent3: #ff6b6b;
+    --text: #e2e4ef;
+    --muted: #6b7094;
+    --hover: #1f2235;
+    --selected: rgba(124,108,252,0.15);
+    --selected-border: #7c6cfc;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Syne',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+  /* TOP BAR */
+  .topbar {
+    height:52px; background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; padding:0 16px; gap:16px; flex-shrink:0; z-index:100;
+  }
+  .logo { font-size:15px; font-weight:800; letter-spacing:-0.5px; color:var(--accent); display:flex; align-items:center; gap:8px; }
+  .logo-badge { background:var(--accent); color:#fff; font-size:9px; padding:2px 6px; border-radius:3px; font-weight:600; letter-spacing:1px; }
+  .topbar-actions { display:flex; gap:8px; margin-left:auto; }
+  .btn { padding:7px 14px; border-radius:6px; border:none; cursor:pointer; font-family:'Syne',sans-serif; font-size:12px; font-weight:600; transition:all .15s; }
+  .btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-ghost:hover { color:var(--text); border-color:var(--accent); }
+  .btn-primary { background:var(--accent); color:#fff; }
+  .btn-primary:hover { background:#6a5ae0; transform:translateY(-1px); }
+  .btn-success { background:var(--accent2); color:#0d1a16; }
+  .btn-success:hover { background:#00bfa0; }
+  .view-tabs { display:flex; gap:2px; background:var(--bg); padding:4px; border-radius:8px; }
+  .view-tab { padding:5px 12px; border-radius:5px; border:none; background:transparent; color:var(--muted); font-family:'Syne',sans-serif; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+  .view-tab.active { background:var(--panel); color:var(--text); }
+
+  /* MAIN LAYOUT */
+  .workspace { display:flex; flex:1; overflow:hidden; }
+
+  /* LEFT PANEL - Components */
+  .components-panel {
+    width:220px; flex-shrink:0; background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .panel-header { padding:14px 16px 10px; font-size:10px; font-weight:700; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; }
+  .search-box { margin:0 12px 10px; position:relative; }
+  .search-box input { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:7px 10px 7px 30px; color:var(--text); font-size:12px; font-family:'Syne',sans-serif; outline:none; transition:.15s; }
+  .search-box input:focus { border-color:var(--accent); }
+  .search-box::before { content:'⌕'; position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; }
+  .comp-group { margin-bottom:4px; }
+  .comp-group-title { padding:6px 16px 4px; font-size:10px; font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; }
+  .comp-list { padding:0 8px; overflow-y:auto; flex:1; }
+  .comp-item {
+    display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px;
+    cursor:grab; transition:.15s; margin-bottom:2px; border:1px solid transparent; user-select:none;
+  }
+  .comp-item:hover { background:var(--hover); border-color:var(--border); }
+  .comp-item:active { cursor:grabbing; opacity:.7; }
+  .comp-icon { width:28px; height:28px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+  .comp-name { font-size:12px; font-weight:600; color:var(--text); }
+  .comp-sub { font-size:10px; color:var(--muted); font-weight:400; }
+
+  /* CANVAS */
+  .canvas-wrap { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+  .canvas-toolbar { height:40px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 12px; gap:8px; }
+  .canvas-toolbar span { font-size:11px; color:var(--muted); }
+  .canvas-size { display:flex; gap:4px; }
+  .size-btn { padding:4px 10px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:11px; cursor:pointer; font-family:'Syne',sans-serif; transition:.15s; }
+  .size-btn.active, .size-btn:hover { background:var(--panel); color:var(--text); border-color:var(--accent); }
+  .canvas-area { flex:1; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:24px; }
+  .canvas-frame {
+    background:#fff; border-radius:8px; min-height:500px; width:100%; max-width:960px;
+    box-shadow:0 0 0 1px var(--border), 0 20px 60px rgba(0,0,0,.5);
+    position:relative; transition:max-width .3s;
+  }
+  .canvas-frame.tablet { max-width:768px; }
+  .canvas-frame.mobile { max-width:390px; }
+
+  .drop-zone {
+    min-height:60px; border:2px dashed transparent; border-radius:6px; transition:.15s;
+    position:relative; padding:4px;
+  }
+  .drop-zone.over { border-color:var(--accent); background:rgba(124,108,252,.05); }
+  .drop-zone-hint {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color:#bbb; font-size:13px; font-style:italic; pointer-events:none;
+  }
+
+  /* Canvas Elements */
+  .canvas-el {
+    position:relative; cursor:pointer; transition:outline .1s;
+    outline:2px solid transparent; outline-offset:2px;
+  }
+  .canvas-el:hover { outline:2px solid rgba(124,108,252,.4); }
+  .canvas-el.selected { outline:2px solid var(--accent) !important; }
+  .el-controls {
+    position:absolute; top:-28px; right:0; display:none; gap:4px; z-index:10;
+    background:var(--accent); border-radius:4px; padding:3px 6px;
+  }
+  .canvas-el.selected .el-controls { display:flex; }
+  .el-ctrl-btn { background:none; border:none; color:#fff; cursor:pointer; font-size:12px; padding:0 3px; opacity:.8; }
+  .el-ctrl-btn:hover { opacity:1; }
+  .el-label {
+    position:absolute; top:-20px; left:0; font-size:9px; font-weight:700; letter-spacing:1px;
+    color:var(--accent); text-transform:uppercase; display:none;
+  }
+  .canvas-el.selected .el-label { display:block; }
+
+  /* RIGHT PANEL - Properties */
+  .props-panel {
+    width:260px; flex-shrink:0; background:var(--surface); border-left:1px solid var(--border);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .props-content { flex:1; overflow-y:auto; padding:0 0 16px; }
+  .prop-section { border-bottom:1px solid var(--border); padding:14px 16px; }
+  .prop-section-title { font-size:10px; font-weight:700; letter-spacing:1.5px; color:var(--muted); text-transform:uppercase; margin-bottom:12px; }
+  .prop-row { margin-bottom:10px; }
+  .prop-label { font-size:11px; color:var(--muted); margin-bottom:4px; font-weight:600; }
+  .prop-input { width:100%; background:var(--panel); border:1px solid var(--border); border-radius:5px; padding:7px 10px; color:var(--text); font-size:12px; font-family:'Syne',sans-serif; outline:none; transition:.15s; }
+  .prop-input:focus { border-color:var(--accent); }
+  select.prop-input { cursor:pointer; }
+  .prop-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .prop-checkbox { display:flex; align-items:center; gap:8px; }
+  .prop-checkbox input { accent-color:var(--accent); width:14px; height:14px; cursor:pointer; }
+  .prop-checkbox label { font-size:12px; color:var(--text); cursor:pointer; }
+  .color-row { display:flex; align-items:center; gap:8px; }
+  .color-preview { width:30px; height:30px; border-radius:5px; border:1px solid var(--border); cursor:pointer; flex-shrink:0; }
+  .no-selection { display:flex; flex-direction:column; align-items:center; justify-content:center; height:200px; gap:12px; padding:20px; text-align:center; }
+  .no-sel-icon { font-size:40px; opacity:.3; }
+  .no-sel-text { font-size:12px; color:var(--muted); line-height:1.6; }
+
+  /* CODE VIEW */
+  .code-view { flex:1; display:none; flex-direction:column; overflow:hidden; }
+  .code-view.active { display:flex; }
+  .canvas-view.hidden { display:none; }
+  .code-header { background:var(--surface); border-bottom:1px solid var(--border); padding:10px 16px; display:flex; align-items:center; gap:12px; }
+  .code-tabs { display:flex; gap:4px; }
+  .code-tab { padding:5px 14px; border-radius:4px; border:none; background:transparent; color:var(--muted); font-size:12px; font-family:'JetBrains Mono',monospace; cursor:pointer; transition:.15s; }
+  .code-tab.active { background:var(--panel); color:var(--accent2); }
+  .code-copy { margin-left:auto; }
+  .code-editor { flex:1; overflow:auto; }
+  pre { padding:24px; font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.8; color:var(--text); }
+  .kw { color:#7c6cfc; }
+  .str { color:#00d4aa; }
+  .tag { color:#ff8c6b; }
+  .attr { color:#ffd080; }
+  .cmt { color:#4a5070; font-style:italic; }
+  .type { color:#80c8ff; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:6px; height:6px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:var(--muted); }
+
+  /* Toast */
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--accent); color:#fff; padding:10px 20px; border-radius:8px; font-size:13px; font-weight:600; opacity:0; transform:translateY(10px); transition:.3s; z-index:999; }
+  .toast.show { opacity:1; transform:translateY(0); }
+
+  /* Resize handle */
+  .panel-resize { width:4px; background:transparent; cursor:col-resize; flex-shrink:0; transition:.15s; }
+  .panel-resize:hover { background:var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">
+    ⬡ BlazorForge
+    <span class="logo-badge">WASM</span>
+  </div>
+  <div class="view-tabs">
+    <button class="view-tab active" onclick="switchView('design')">🎨 Design</button>
+    <button class="view-tab" onclick="switchView('code')">⟨/⟩ Code</button>
+  </div>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" onclick="clearCanvas()">🗑 Vider</button>
+    <button class="btn btn-ghost" onclick="loadSample()">📄 Exemple</button>
+    <button class="btn btn-success" onclick="exportCode()">⬇ Exporter .razor</button>
+  </div>
+</div>
+
+<div class="workspace">
+
+  <!-- LEFT PANEL -->
+  <div class="components-panel">
+    <div class="panel-header">Composants</div>
+    <div class="search-box"><input type="text" placeholder="Rechercher..." id="searchInput" oninput="filterComponents(this.value)"></div>
+    <div class="comp-list" id="compList">
+
+      <div class="comp-group" data-group="layout">
+        <div class="comp-group-title">Mise en page</div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'container')" title="Conteneur flexible">
+          <div class="comp-icon" style="background:#1e2235">📦</div>
+          <div><div class="comp-name">Container</div><div class="comp-sub">div.container</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'row')" title="Rangée Bootstrap">
+          <div class="comp-icon" style="background:#1e2535">⬛</div>
+          <div><div class="comp-name">Row / Col</div><div class="comp-sub">Grille Bootstrap</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'card')" title="Carte Bootstrap">
+          <div class="comp-icon" style="background:#1e2535">🃏</div>
+          <div><div class="comp-name">Card</div><div class="comp-sub">div.card</div></div>
+        </div>
+      </div>
+
+      <div class="comp-group" data-group="typography">
+        <div class="comp-group-title">Typographie</div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'h1')">
+          <div class="comp-icon" style="background:#2a1e35">H1</div>
+          <div><div class="comp-name">Titre H1</div><div class="comp-sub">&lt;h1&gt;</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'h2')">
+          <div class="comp-icon" style="background:#2a1e35">H2</div>
+          <div><div class="comp-name">Titre H2</div><div class="comp-sub">&lt;h2&gt;</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'paragraph')">
+          <div class="comp-icon" style="background:#1e2a1e">¶</div>
+          <div><div class="comp-name">Paragraphe</div><div class="comp-sub">&lt;p&gt;</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'badge')">
+          <div class="comp-icon" style="background:#2a2a1e">🏷</div>
+          <div><div class="comp-name">Badge</div><div class="comp-sub">span.badge</div></div>
+        </div>
+      </div>
+
+      <div class="comp-group" data-group="form">
+        <div class="comp-group-title">Formulaires</div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'inputtext')">
+          <div class="comp-icon" style="background:#1e2a2a">✏️</div>
+          <div><div class="comp-name">InputText</div><div class="comp-sub">Blazor InputText</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'inputnumber')">
+          <div class="comp-icon" style="background:#1e2a2a">🔢</div>
+          <div><div class="comp-name">InputNumber</div><div class="comp-sub">Blazor InputNumber</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'select')">
+          <div class="comp-icon" style="background:#1e2a2a">▾</div>
+          <div><div class="comp-name">InputSelect</div><div class="comp-sub">Blazor InputSelect</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'checkbox')">
+          <div class="comp-icon" style="background:#1e2a2a">☑</div>
+          <div><div class="comp-name">InputCheckbox</div><div class="comp-sub">Blazor InputCheckbox</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'editform')">
+          <div class="comp-icon" style="background:#2a1e1e">📋</div>
+          <div><div class="comp-name">EditForm</div><div class="comp-sub">Blazor EditForm</div></div>
+        </div>
+      </div>
+
+      <div class="comp-group" data-group="action">
+        <div class="comp-group-title">Actions</div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'button')">
+          <div class="comp-icon" style="background:#1e1e2a">🔘</div>
+          <div><div class="comp-name">Bouton</div><div class="comp-sub">&lt;button&gt;</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'navlink')">
+          <div class="comp-icon" style="background:#1e1e2a">🔗</div>
+          <div><div class="comp-name">NavLink</div><div class="comp-sub">Blazor NavLink</div></div>
+        </div>
+      </div>
+
+      <div class="comp-group" data-group="data">
+        <div class="comp-group-title">Données</div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'table')">
+          <div class="comp-icon" style="background:#1e2a1e">📊</div>
+          <div><div class="comp-name">Tableau</div><div class="comp-sub">&lt;table&gt;</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'alert')">
+          <div class="comp-icon" style="background:#2a1e1e">⚠️</div>
+          <div><div class="comp-name">Alert</div><div class="comp-sub">div.alert</div></div>
+        </div>
+      </div>
+
+      <div class="comp-group" data-group="blazor">
+        <div class="comp-group-title">Blazor Natif</div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'ifblock')">
+          <div class="comp-icon" style="background:#2a2a1e">🔀</div>
+          <div><div class="comp-name">@if block</div><div class="comp-sub">Conditionnel</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'foreach')">
+          <div class="comp-icon" style="background:#2a2a1e">🔁</div>
+          <div><div class="comp-name">@foreach</div><div class="comp-sub">Boucle</div></div>
+        </div>
+        <div class="comp-item" draggable="true" ondragstart="dragStart(event,'loading')">
+          <div class="comp-icon" style="background:#1e2535">⏳</div>
+          <div><div class="comp-name">Loading</div><div class="comp-sub">Spinner Bootstrap</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-wrap" id="canvasView">
+    <div class="canvas-toolbar">
+      <span>Taille :</span>
+      <div class="canvas-size">
+        <button class="size-btn active" onclick="setSize('desktop',this)">🖥 Desktop</button>
+        <button class="size-btn" onclick="setSize('tablet',this)">📱 Tablet</button>
+        <button class="size-btn" onclick="setSize('mobile',this)">📱 Mobile</button>
+      </div>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted)">Glissez des composants sur le canevas</span>
+    </div>
+    <div class="canvas-area">
+      <div class="canvas-frame" id="canvasFrame">
+        <div id="mainDropZone" class="drop-zone" style="min-height:500px;padding:12px;"
+          ondragover="dragOver(event,this)" ondragleave="dragLeave(event,this)" ondrop="drop(event,this)">
+          <div class="drop-zone-hint" id="mainHint">Glissez vos composants ici pour commencer</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CODE VIEW -->
+  <div class="code-view" id="codeView">
+    <div class="code-header">
+      <div class="code-tabs">
+        <button class="code-tab active" onclick="showCodeTab('razor',this)">📄 Component.razor</button>
+        <button class="code-tab" onclick="showCodeTab('codebehind',this)">⚙️ Component.razor.cs</button>
+      </div>
+      <button class="btn btn-ghost code-copy" onclick="copyCode()">📋 Copier</button>
+    </div>
+    <div class="code-editor">
+      <pre id="codeOutput"></pre>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="props-panel">
+    <div class="panel-header">Propriétés</div>
+    <div class="props-content" id="propsContent">
+      <div class="no-selection">
+        <div class="no-sel-icon">🖱️</div>
+        <div class="no-sel-text">Sélectionnez un composant sur le canevas pour modifier ses propriétés</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let elements = [];
+let selectedId = null;
+let dragType = null;
+let idCounter = 1;
+let currentCodeTab = 'razor';
+
+const componentDefs = {
+  container: { label:'Container', html: (p)=>`<div class="container${p.fluid?'-fluid':''} py-3">\n  <div class="row">\n    <div class="col-12"></div>\n  </div>\n</div>`, preview: (p)=>`<div style="padding:12px;border:1px dashed #aaa;border-radius:4px;min-height:50px;font-size:12px;color:#999;text-align:center">📦 Container${p.fluid?'-fluid':''}</div>` },
+  row: { label:'Row/Col', html:(p)=>`<div class="row">\n  <div class="col-md-6">Colonne 1</div>\n  <div class="col-md-6">Colonne 2</div>\n</div>`, preview:()=>`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:#f0f0f0;padding:8px;border-radius:3px;font-size:11px;text-align:center">Col 1</div><div style="background:#f0f0f0;padding:8px;border-radius:3px;font-size:11px;text-align:center">Col 2</div></div>` },
+  card: { label:'Card', html:(p)=>`<div class="card${p.shadow?' shadow':''}">\n  <div class="card-header">${p.title||'Titre de la carte'}</div>\n  <div class="card-body">\n    <p class="card-text">${p.content||'Contenu de la carte'}</p>\n  </div>\n</div>`, preview:(p)=>`<div style="border:1px solid #dee2e6;border-radius:8px;overflow:hidden"><div style="background:#f8f9fa;padding:10px 14px;font-weight:700;font-size:13px;border-bottom:1px solid #dee2e6">${p.title||'Titre de la carte'}</div><div style="padding:14px;font-size:12px;color:#555">${p.content||'Contenu de la carte'}</div></div>` },
+  h1: { label:'H1', html:(p)=>`<h1 class="${p.cssClass||''}">${p.text||'Titre principal'}</h1>`, preview:(p)=>`<h1 style="font-size:28px;font-weight:700;margin:8px 0;color:#111">${p.text||'Titre principal'}</h1>` },
+  h2: { label:'H2', html:(p)=>`<h2 class="${p.cssClass||''}">${p.text||'Sous-titre'}</h2>`, preview:(p)=>`<h2 style="font-size:22px;font-weight:600;margin:6px 0;color:#222">${p.text||'Sous-titre'}</h2>` },
+  paragraph: { label:'Paragraphe', html:(p)=>`<p class="${p.cssClass||''}">${p.text||'Votre texte ici...'}</p>`, preview:(p)=>`<p style="font-size:14px;color:#444;line-height:1.6;margin:6px 0">${p.text||'Votre texte ici...'}</p>` },
+  badge: { label:'Badge', html:(p)=>`<span class="badge bg-${p.variant||'primary'}">${p.text||'Badge'}</span>`, preview:(p)=>`<span style="background:${variantColor(p.variant)};color:#fff;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600">${p.text||'Badge'}</span>` },
+  button: { label:'Bouton', html:(p)=>`<button class="btn btn-${p.variant||'primary'}${p.outline?' btn-outline-'+p.variant:''}" @onclick="${p.handler||'HandleClick'}">${p.text||'Cliquez ici'}</button>`, preview:(p)=>`<button style="background:${p.outline?'transparent':variantColor(p.variant)};color:${p.outline?variantColor(p.variant):'#fff'};border:2px solid ${variantColor(p.variant)};padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">${p.text||'Cliquez ici'}</button>` },
+  inputtext: { label:'InputText', html:(p)=>`<div class="mb-3">\n  <label class="form-label">${p.label||'Champ texte'}</label>\n  <InputText class="form-control" @bind-Value="${p.model||'Model.Nom'}" placeholder="${p.placeholder||''}" />\n</div>`, preview:(p)=>`<div style="margin:6px 0"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">${p.label||'Champ texte'}</label><input style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:7px 10px;font-size:13px" placeholder="${p.placeholder||'Saisir...'}" /></div>` },
+  inputnumber: { label:'InputNumber', html:(p)=>`<div class="mb-3">\n  <label class="form-label">${p.label||'Nombre'}</label>\n  <InputNumber class="form-control" @bind-Value="${p.model||'Model.Valeur'}" />\n</div>`, preview:(p)=>`<div style="margin:6px 0"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">${p.label||'Nombre'}</label><input type="number" style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:7px 10px;font-size:13px" /></div>` },
+  select: { label:'InputSelect', html:(p)=>`<div class="mb-3">\n  <label class="form-label">${p.label||'Sélection'}</label>\n  <InputSelect class="form-select" @bind-Value="${p.model||'Model.Option'}">\n    <option value="">-- Choisir --</option>\n    <option value="1">Option 1</option>\n    <option value="2">Option 2</option>\n  </InputSelect>\n</div>`, preview:(p)=>`<div style="margin:6px 0"><label style="font-size:12px;font-weight:600;color:#444;display:block;margin-bottom:4px">${p.label||'Sélection'}</label><select style="width:100%;border:1px solid #ced4da;border-radius:4px;padding:7px 10px;font-size:13px"><option>-- Choisir --</option></select></div>` },
+  checkbox: { label:'InputCheckbox', html:(p)=>`<div class="mb-3 form-check">\n  <InputCheckbox class="form-check-input" @bind-Value="${p.model||'Model.Accepte'}" id="${p.id||'chk1'}" />\n  <label class="form-check-label" for="${p.id||'chk1'}">${p.label||'Accepter les conditions'}</label>\n</div>`, preview:(p)=>`<div style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="checkbox" /><label style="font-size:13px;color:#444">${p.label||'Accepter les conditions'}</label></div>` },
+  editform: { label:'EditForm', html:(p)=>`<EditForm Model="${p.model||'@Model'}" OnValidSubmit="${p.onsubmit||'HandleSubmit'}">\n  <DataAnnotationsValidator />\n  <ValidationSummary />\n\n  {{children}}\n\n  <button type="submit" class="btn btn-primary">Envoyer</button>\n</EditForm>`, preview:()=>`<div style="border:2px dashed #7c6cfc;border-radius:6px;padding:12px;text-align:center;font-size:12px;color:#7c6cfc;font-weight:600">📋 EditForm (formulaire Blazor)</div>` },
+  navlink: { label:'NavLink', html:(p)=>`<NavLink class="nav-link${p.btn?' btn btn-link':''}" href="${p.href||'/page'}" Match="NavLinkMatch.All">${p.text||'Lien de navigation'}</NavLink>`, preview:(p)=>`<a style="color:#0d6efd;font-size:13px;text-decoration:none;font-weight:500">${p.text||'Lien de navigation'}</a>` },
+  table: { label:'Tableau', html:(p)=>`<table class="table${p.striped?' table-striped':''}${p.hover?' table-hover':''}${p.bordered?' table-bordered':''}">\n  <thead>\n    <tr>\n      <th>Colonne 1</th>\n      <th>Colonne 2</th>\n      <th>Actions</th>\n    </tr>\n  </thead>\n  <tbody>\n    @foreach (var item in Items)\n    {\n      <tr>\n        <td>@item.Nom</td>\n        <td>@item.Valeur</td>\n        <td><button class="btn btn-sm btn-danger">Supprimer</button></td>\n      </tr>\n    }\n  </tbody>\n</table>`, preview:(p)=>`<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f8f9fa"><th style="padding:8px;border:1px solid #dee2e6;text-align:left">Colonne 1</th><th style="padding:8px;border:1px solid #dee2e6;text-align:left">Colonne 2</th><th style="padding:8px;border:1px solid #dee2e6;text-align:left">Actions</th></tr></thead><tbody><tr><td style="padding:8px;border:1px solid #dee2e6">item.Nom</td><td style="padding:8px;border:1px solid #dee2e6">item.Valeur</td><td style="padding:8px;border:1px solid #dee2e6"><span style="background:#dc3545;color:#fff;padding:2px 8px;border-radius:3px;font-size:11px">Supprimer</span></td></tr></tbody></table>` },
+  alert: { label:'Alert', html:(p)=>`<div class="alert alert-${p.variant||'info'}" role="alert">\n  ${p.text||'Message important à afficher.'}\n</div>`, preview:(p)=>`<div style="background:${alertBg(p.variant)};border:1px solid ${alertBorder(p.variant)};color:${alertText(p.variant)};padding:12px 16px;border-radius:6px;font-size:13px">${p.text||'Message important à afficher.'}</div>` },
+  ifblock: { label:'@if', html:(p)=>`@if (${p.condition||'isVisible'})\n{\n  <div>Contenu conditionnel</div>\n}\n@else\n{\n  <div>Contenu alternatif</div>\n}`, preview:(p)=>`<div style="border:2px dashed #ffd080;border-radius:6px;padding:10px;font-size:12px;color:#b8860b;font-weight:600">🔀 @if (${p.condition||'isVisible'}) { ... }</div>` },
+  foreach: { label:'@foreach', html:(p)=>`@foreach (var ${p.item||'item'} in ${p.list||'Items'})\n{\n  <div class="mb-2">\n    @${p.item||'item'}.ToString()\n  </div>\n}`, preview:(p)=>`<div style="border:2px dashed #00d4aa;border-radius:6px;padding:10px;font-size:12px;color:#007a60;font-weight:600">🔁 @foreach (var ${p.item||'item'} in ${p.list||'Items'}) { ... }</div>` },
+  loading: { label:'Loading', html:(p)=>`@if (isLoading)\n{\n  <div class="d-flex justify-content-center align-items-center p-4">\n    <div class="spinner-border text-${p.variant||'primary'}" role="status">\n      <span class="visually-hidden">Chargement...</span>\n    </div>\n  </div>\n}`, preview:()=>`<div style="display:flex;justify-content:center;padding:16px"><div style="width:28px;height:28px;border:3px solid #e9ecef;border-top-color:#7c6cfc;border-radius:50%;animation:spin 1s linear infinite"></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>` },
+};
+
+const propsConfig = {
+  container: [{k:'fluid',l:'Fluid',t:'checkbox'}],
+  card: [{k:'title',l:'Titre',t:'text',ph:'Titre de la carte'},{k:'content',l:'Contenu',t:'text',ph:'...'},{k:'shadow',l:'Ombre',t:'checkbox'}],
+  h1: [{k:'text',l:'Texte',t:'text',ph:'Titre'},{k:'cssClass',l:'Classes CSS',t:'text',ph:'text-center'}],
+  h2: [{k:'text',l:'Texte',t:'text',ph:'Sous-titre'},{k:'cssClass',l:'Classes CSS',t:'text',ph:''}],
+  paragraph: [{k:'text',l:'Texte',t:'text',ph:'Votre texte...'},{k:'cssClass',l:'Classes CSS',t:'text',ph:''}],
+  badge: [{k:'text',l:'Texte',t:'text',ph:'Badge'},{k:'variant',l:'Couleur',t:'select',opts:['primary','secondary','success','danger','warning','info']}],
+  button: [{k:'text',l:'Texte',t:'text',ph:'Cliquez ici'},{k:'variant',l:'Style',t:'select',opts:['primary','secondary','success','danger','warning','info','dark']},{k:'outline',l:'Outline',t:'checkbox'},{k:'handler',l:'Méthode @onclick',t:'text',ph:'HandleClick'}],
+  inputtext: [{k:'label',l:'Label',t:'text',ph:'Champ texte'},{k:'placeholder',l:'Placeholder',t:'text',ph:''},{k:'model',l:'@bind-Value',t:'text',ph:'Model.Nom'}],
+  inputnumber: [{k:'label',l:'Label',t:'text',ph:'Nombre'},{k:'model',l:'@bind-Value',t:'text',ph:'Model.Valeur'}],
+  select: [{k:'label',l:'Label',t:'text',ph:'Sélection'},{k:'model',l:'@bind-Value',t:'text',ph:'Model.Option'}],
+  checkbox: [{k:'label',l:'Label',t:'text',ph:'Accepter les conditions'},{k:'model',l:'@bind-Value',t:'text',ph:'Model.Accepte'},{k:'id',l:'ID',t:'text',ph:'chk1'}],
+  editform: [{k:'model',l:'Model',t:'text',ph:'@Model'},{k:'onsubmit',l:'OnValidSubmit',t:'text',ph:'HandleSubmit'}],
+  navlink: [{k:'text',l:'Texte',t:'text',ph:'Navigation'},{k:'href',l:'href',t:'text',ph:'/page'},{k:'btn',l:'Style bouton',t:'checkbox'}],
+  table: [{k:'striped',l:'Rayures',t:'checkbox'},{k:'hover',l:'Survol',t:'checkbox'},{k:'bordered',l:'Bordures',t:'checkbox'}],
+  alert: [{k:'text',l:'Message',t:'text',ph:'Message...'},{k:'variant',l:'Type',t:'select',opts:['primary','secondary','success','danger','warning','info']}],
+  ifblock: [{k:'condition',l:'Condition C#',t:'text',ph:'isVisible'}],
+  foreach: [{k:'item',l:'Variable item',t:'text',ph:'item'},{k:'list',l:'Collection',t:'text',ph:'Items'}],
+  loading: [{k:'variant',l:'Couleur',t:'select',opts:['primary','secondary','success','danger']}],
+};
+
+function variantColor(v) { const c={primary:'#0d6efd',secondary:'#6c757d',success:'#198754',danger:'#dc3545',warning:'#ffc107',info:'#0dcaf0',dark:'#212529'}; return c[v]||c.primary; }
+function alertBg(v) { const c={primary:'#cfe2ff',success:'#d1e7dd',danger:'#f8d7da',warning:'#fff3cd',info:'#d3f4fb'}; return c[v]||c.info; }
+function alertBorder(v) { const c={primary:'#b6d4fe',success:'#badbcc',danger:'#f5c2c7',warning:'#ffecb5',info:'#9eeaf9'}; return c[v]||c.info; }
+function alertText(v) { const c={primary:'#084298',success:'#0f5132',danger:'#842029',warning:'#664d03',info:'#055160'}; return c[v]||c.info; }
+
+function genId() { return 'el_' + (idCounter++); }
+
+function dragStart(e, type) { dragType = type; e.dataTransfer.effectAllowed='copy'; }
+function dragOver(e, el) { e.preventDefault(); e.dataTransfer.dropEffect='copy'; el.classList.add('over'); }
+function dragLeave(e, el) { if(!el.contains(e.relatedTarget)) el.classList.remove('over'); }
+
+function drop(e, zone) {
+  e.preventDefault(); zone.classList.remove('over');
+  if(!dragType) return;
+  const id = genId();
+  const el = { id, type:dragType, props:{} };
+  elements.push(el);
+  renderElements();
+  selectElement(id);
+  showToast(`✓ ${componentDefs[dragType].label} ajouté`);
+  dragType = null;
+}
+
+function renderElements() {
+  const zone = document.getElementById('mainDropZone');
+  const hint = document.getElementById('mainHint');
+  hint.style.display = elements.length ? 'none' : 'flex';
+  // Remove old rendered els
+  Array.from(zone.querySelectorAll('.canvas-el')).forEach(e=>e.remove());
+  elements.forEach(el => {
+    const def = componentDefs[el.type];
+    const wrap = document.createElement('div');
+    wrap.className = 'canvas-el' + (selectedId===el.id?' selected':'');
+    wrap.dataset.id = el.id;
+    wrap.innerHTML = `
+      <div class="el-label">${def.label}</div>
+      <div class="el-controls">
+        <button class="el-ctrl-btn" onclick="moveEl('${el.id}',-1)" title="Monter">↑</button>
+        <button class="el-ctrl-btn" onclick="moveEl('${el.id}',1)" title="Descendre">↓</button>
+        <button class="el-ctrl-btn" onclick="duplicateEl('${el.id}')" title="Dupliquer">⎘</button>
+        <button class="el-ctrl-btn" onclick="removeEl('${el.id}')" title="Supprimer">✕</button>
+      </div>
+      <div class="el-preview">${def.preview(el.props)}</div>
+    `;
+    wrap.addEventListener('click', (e)=>{ e.stopPropagation(); selectElement(el.id); });
+    zone.appendChild(wrap);
+  });
+}
+
+function selectElement(id) {
+  selectedId = id;
+  renderElements();
+  showProps(id);
+}
+
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.canvas-el') && !e.target.closest('.props-panel')) {
+    selectedId = null;
+    renderElements();
+    document.getElementById('propsContent').innerHTML = `<div class="no-selection"><div class="no-sel-icon">🖱️</div><div class="no-sel-text">Sélectionnez un composant pour modifier ses propriétés</div></div>`;
+  }
+});
+
+function removeEl(id) { elements = elements.filter(e=>e.id!==id); if(selectedId===id){selectedId=null;} renderElements(); showNoSelection(); }
+function moveEl(id,dir) { const i=elements.findIndex(e=>e.id===id); const ni=i+dir; if(ni<0||ni>=elements.length)return; [elements[i],elements[ni]]=[elements[ni],elements[i]]; renderElements(); }
+function duplicateEl(id) { const el=elements.find(e=>e.id===id); if(!el)return; const nEl={...el,id:genId(),props:{...el.props}}; const i=elements.findIndex(e=>e.id===id); elements.splice(i+1,0,nEl); renderElements(); showToast('✓ Dupliqué'); }
+
+function showNoSelection() {
+  document.getElementById('propsContent').innerHTML = `<div class="no-selection"><div class="no-sel-icon">🖱️</div><div class="no-sel-text">Sélectionnez un composant pour modifier ses propriétés</div></div>`;
+}
+
+function showProps(id) {
+  const el = elements.find(e=>e.id===id);
+  if(!el) return;
+  const cfg = propsConfig[el.type]||[];
+  const def = componentDefs[el.type];
+  let html = `<div class="prop-section"><div class="prop-section-title">🏷 ${def.label}</div>`;
+  cfg.forEach(p=>{
+    html+=`<div class="prop-row"><div class="prop-label">${p.l}</div>`;
+    if(p.t==='text') html+=`<input class="prop-input" value="${el.props[p.k]||''}" placeholder="${p.ph||''}" oninput="updateProp('${id}','${p.k}',this.value)">`;
+    else if(p.t==='checkbox') html+=`<div class="prop-checkbox"><input type="checkbox" id="p_${p.k}" ${el.props[p.k]?'checked':''} onchange="updateProp('${id}','${p.k}',this.checked)"><label for="p_${p.k}">${el.props[p.k]?'Activé':'Désactivé'}</label></div>`;
+    else if(p.t==='select') html+=`<select class="prop-input" onchange="updateProp('${id}','${p.k}',this.value)">${p.opts.map(o=>`<option value="${o}" ${el.props[p.k]===o?'selected':''}>${o}</option>`).join('')}</select>`;
+    html+=`</div>`;
+  });
+  if(cfg.length===0) html+=`<div style="font-size:12px;color:var(--muted)">Ce composant n'a pas de propriétés configurables.</div>`;
+  html+=`</div>`;
+  html+=`<div class="prop-section"><div class="prop-section-title">🗑 Danger</div><button class="btn" style="width:100%;background:rgba(220,53,69,.1);border:1px solid rgba(220,53,69,.3);color:#dc3545" onclick="removeEl('${id}')">Supprimer le composant</button></div>`;
+  document.getElementById('propsContent').innerHTML = html;
+}
+
+function updateProp(id, key, value) {
+  const el = elements.find(e=>e.id===id);
+  if(!el) return;
+  el.props[key] = value;
+  renderElements();
+  // Re-render selection without losing focus
+  const wrap = document.querySelector(`[data-id="${id}"]`);
+  if(wrap) wrap.classList.add('selected');
+}
+
+function setSize(s, btn) {
+  document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const f=document.getElementById('canvasFrame');
+  f.className='canvas-frame'+(s!=='desktop'?' '+s:'');
+}
+
+function filterComponents(q) {
+  const lq=q.toLowerCase();
+  document.querySelectorAll('.comp-item').forEach(item=>{
+    const n=item.querySelector('.comp-name').textContent.toLowerCase();
+    const s=item.querySelector('.comp-sub').textContent.toLowerCase();
+    item.style.display=(n.includes(lq)||s.includes(lq)||!q)?'':'none';
+  });
+}
+
+function generateRazorCode() {
+  let code = `@page "/mapage"\n@using MonApp.Models\n\n`;
+  elements.forEach(el=>{
+    code += componentDefs[el.type].html(el.props)+'\n\n';
+  });
+  return code;
+}
+
+function generateCodeBehind() {
+  return `using Microsoft.AspNetCore.Components;\nusing MonApp.Models;\n\nnamespace MonApp.Pages\n{\n    public partial class MaPage : ComponentBase\n    {\n        // Injection de services\n        // [Inject] public MonService Service { get; set; } = default!;\n\n        // Propriétés\n        public bool isLoading { get; set; } = false;\n        public bool isVisible { get; set; } = true;\n        public List<string> Items { get; set; } = new();\n\n        protected override async Task OnInitializedAsync()\n        {\n            await ChargerDonnees();\n        }\n\n        private async Task ChargerDonnees()\n        {\n            isLoading = true;\n            // TODO: charger les données\n            await Task.Delay(500);\n            isLoading = false;\n        }\n\n        private void HandleClick()\n        {\n            // TODO: implémenter\n        }\n\n        private async Task HandleSubmit()\n        {\n            // TODO: soumettre le formulaire\n        }\n    }\n}`;
+}
+
+function syntaxHighlight(code, lang) {
+  if(lang==='razor') {
+    return code
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/(@page|@using|@if|@else|@foreach|@bind-Value|@onclick|@bind)/g,'<span class="kw">$1</span>')
+      .replace(/("([^"]*)")/g,'<span class="str">$1</span>')
+      .replace(/(&lt;(\/?[A-Z][A-Za-z]*|\/?))/g,'<span class="tag">$1</span>')
+      .replace(/(class|type|href|role|for|id|placeholder|Match)=/g,'<span class="attr">$1</span>=');
+  }
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\b(using|namespace|public|private|partial|class|async|await|new|return|void|var|true|false|override|protected|get;|set;)\b/g,'<span class="kw">$1</span>')
+    .replace(/("([^"]*)")/g,'<span class="str">$1</span>')
+    .replace(/\/\/.*/g,'<span class="cmt">$&</span>')
+    .replace(/\b(ComponentBase|Task|List|string|bool|int)\b/g,'<span class="type">$1</span>');
+}
+
+function showCodeTab(tab, btn) {
+  currentCodeTab = tab;
+  document.querySelectorAll('.code-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const code = tab==='razor' ? generateRazorCode() : generateCodeBehind();
+  document.getElementById('codeOutput').innerHTML = syntaxHighlight(code, tab==='razor'?'razor':'cs');
+}
+
+function switchView(v) {
+  document.querySelectorAll('.view-tab').forEach(b=>b.classList.toggle('active',b.textContent.includes(v==='design'?'Design':'Code')));
+  if(v==='code'){
+    document.getElementById('canvasView').classList.add('hidden');
+    document.getElementById('codeView').classList.add('active');
+    const code = currentCodeTab==='razor' ? generateRazorCode() : generateCodeBehind();
+    document.getElementById('codeOutput').innerHTML = syntaxHighlight(code, currentCodeTab==='razor'?'razor':'cs');
+  } else {
+    document.getElementById('canvasView').classList.remove('hidden');
+    document.getElementById('codeView').classList.remove('active');
+  }
+}
+
+function copyCode() {
+  const code = currentCodeTab==='razor' ? generateRazorCode() : generateCodeBehind();
+  navigator.clipboard.writeText(code).then(()=>showToast('✓ Code copié dans le presse-papier'));
+}
+
+function exportCode() {
+  const code = generateRazorCode();
+  const blob = new Blob([code], {type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='Component.razor'; a.click();
+  showToast('✓ Fichier .razor téléchargé');
+}
+
+function clearCanvas() { elements=[]; selectedId=null; renderElements(); showNoSelection(); showToast('Canevas vidé'); }
+
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function loadSample() {
+  elements = [
+    {id:genId(),type:'h1',props:{text:'Gestion des utilisateurs'}},
+    {id:genId(),type:'badge',props:{text:'Admin',variant:'success'}},
+    {id:genId(),type:'paragraph',props:{text:'Liste de tous les utilisateurs enregistrés dans le système.'}},
+    {id:genId(),type:'button',props:{text:'+ Ajouter un utilisateur',variant:'primary',handler:'AjouterUtilisateur'}},
+    {id:genId(),type:'loading',props:{variant:'primary'}},
+    {id:genId(),type:'table',props:{striped:true,hover:true}},
+  ];
+  renderElements();
+  showToast('✓ Exemple chargé');
+}
+</script>
+</body>
+</html>
