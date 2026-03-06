@@ -74,7 +74,7 @@ window.chromaMix = (() => {
         const {saturation, lightness} = e;
 
         const mobile = isMobile();
-        const size   = mobile ? 88 : 130;   // mobile: même taille que pipette
+        const size   = mobile ? 44 : 130;   // mobile: taille réduite
         const factor = mobile ? 5  : 6;
         const half   = size / 2;
 
@@ -91,9 +91,9 @@ window.chromaMix = (() => {
         const cssY   = cy_c * scaleY;
 
         if (mobile) {
-            // Coin supérieur gauche de la loupe = position du doigt
-            zoom.style.left = cssX + 'px';
-            zoom.style.top  = cssY + 'px';
+            // Loupe décalée de -size : coin inférieur droit = doigt
+            zoom.style.left = (cssX - size) + 'px';
+            zoom.style.top  = (cssY - size) + 'px';
         } else {
             // Desktop : loupe centrée sur le curseur
             zoom.style.left = (cssX - half) + 'px';
@@ -196,9 +196,9 @@ window.chromaMix = (() => {
                 // Position CSS du doigt dans le wrapper
                 const fingerCssX = clientX - wr.left;
                 const fingerCssY = clientY - wr.top;
-                // Coin supérieur gauche de la loupe = position du doigt
-                _zCanvas.style.left = fingerCssX + 'px';
-                _zCanvas.style.top  = fingerCssY + 'px';
+                // Loupe décalée de -size : coin inférieur droit = doigt
+                _zCanvas.style.left = (fingerCssX - size) + 'px';
+                _zCanvas.style.top  = (fingerCssY - size) + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
                 _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
@@ -265,8 +265,10 @@ window.chromaMix = (() => {
         if(e.target&&e.target.classList.contains('hsl-input'))updateHslThumbs();
     });
 
+    function isMobileView(){ return isMobile(); }
+
     return{
-        drawWheel, pickPixel, getHueAt, getColorAt,
+        drawWheel, pickPixel, getHueAt, getColorAt, isMobileView,
         drawWheelZoom, hideWheelZoom,
         loadPipetteFromDataUrl, pipettePreview, pipettePickColor, pipetteTouchPreview, hidePipetteZoom,
         getCanvasOffset, scrollToResults, updateHslThumbs
