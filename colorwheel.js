@@ -4,7 +4,9 @@ window.chromaMix = (() => {
 
     // ══ ROUE ══════════════════════════════════════════════════════════════════
     function drawWheel(canvasId, saturation, lightness, zoom) {
-        saturation = saturation || 100; lightness = lightness || 50; zoom = zoom || 1;
+        saturation = saturation || 100; lightness = lightness || 50;
+        // Si zoom non fourni, réutiliser le zoom actuel du canvas (persistance entre redraws)
+        zoom = zoom || (wheels[canvasId] ? wheels[canvasId].zoom : 1) || 1;
         const canvas = document.getElementById(canvasId);
         if (!canvas) { setTimeout(() => drawWheel(canvasId, saturation, lightness, zoom), 100); return; }
         const ctx = canvas.getContext('2d');
