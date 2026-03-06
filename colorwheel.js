@@ -74,7 +74,7 @@ window.chromaMix = (() => {
         const {saturation, lightness} = e;
 
         const mobile = isMobile();
-        const size   = mobile ? 44 : 130;   // mobile: taille réduite
+        const size   = mobile ? 15 : 130;   // mobile: taille réduite
         const factor = mobile ? 5  : 6;
         const half   = size / 2;
 
@@ -92,8 +92,9 @@ window.chromaMix = (() => {
 
         if (mobile) {
             // Loupe décalée de -size : coin inférieur droit = doigt
-            zoom.style.left = (cssX - size) + 'px';
-            zoom.style.top  = (cssY - size) + 'px';
+            // Coin supérieur gauche = doigt
+            zoom.style.left = cssX + 'px';
+            zoom.style.top  = cssY + 'px';
         } else {
             // Desktop : loupe centrée sur le curseur
             zoom.style.left = (cssX - half) + 'px';
@@ -198,7 +199,7 @@ window.chromaMix = (() => {
                 const fingerCssY = clientY - wr.top;
                 // Loupe décalée de -size : coin inférieur droit = doigt
                 _zCanvas.style.left = (fingerCssX - size) + 'px';
-                _zCanvas.style.top  = (fingerCssY - size) + 'px';
+                _zCanvas.style.top  = (fingerCssY - size - 15) + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
                 _drawPipetteZoom(_zCanvas, cx, cy, size, 5);
             }
