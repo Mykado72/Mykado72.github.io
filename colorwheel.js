@@ -73,7 +73,7 @@ window.chromaMix = (() => {
         const mobile = isMobile();
         // if (mobile) return
         const size   = mobile ? 10 : 75;
-        const factor = mobile ? 4  : 4;    // zone source = size/factor px canvas
+        const factor = mobile ? 1  : 4;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
 
@@ -186,7 +186,7 @@ window.chromaMix = (() => {
                 _zCanvas.style.left = (fingerCssX) + 'px';
                 _zCanvas.style.top  = (fingerCssY) + 'px';
                 // Extraire depuis les coordonnées canvas du doigt
-                _drawPipetteZoom(_zCanvas, cx, cy, size*10, 4);
+                _drawPipetteZoom(_zCanvas, cx, cy, size/10, 4);
             }
         }
         const px=_pCtx.getImageData(Math.round(cx),Math.round(cy),1,1).data;
