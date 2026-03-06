@@ -895,6 +895,5 @@ html, body {
 @media (max-width: 900px) {
     .pipette-zoom-bar { display: flex; }
     /* Sur mobile, pas de loupe dans le wrap */
-    .zoom-lens { display: none !important; }
-    .zoom-crosshair { display: none !important; }
+    /* zoom-lens desktop reste dans le wrap — pas masqué sur mobile */
 }

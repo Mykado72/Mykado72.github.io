@@ -118,7 +118,7 @@ window.chromaMix = (() => {
     function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
 
     // ══ PIPETTE ═══════════════════════════════════════════════════════════════
-    let _pCtx=null, _pCanvas=null, _zCanvas=null;
+    let _pCtx=null, _pCanvas=null, _zCanvas=null, _zCanvasMobile=null;
 
     function loadPipetteFromDataUrl(dataUrl,dotNetRef){
         const img=new Image();
@@ -130,6 +130,7 @@ window.chromaMix = (() => {
     function tryDraw(img,dataUrl,dotNetRef,n){
         _pCanvas=document.getElementById('pipetteCanvas');
         _zCanvas=document.getElementById('zoomCanvas');
+        _zCanvasMobile=document.getElementById('zoomCanvasMobile');
         if(!_pCanvas&&n>0){setTimeout(()=>tryDraw(img,dataUrl,dotNetRef,n-1),150);return;}
         if(!_pCanvas){console.warn('pipetteCanvas introuvable');return;}
         const wrap=_pCanvas.parentElement, maxW=wrap?(wrap.offsetWidth||340):340;
@@ -212,6 +213,8 @@ window.chromaMix = (() => {
     function hidePipetteZoom(){
         _zCanvas=_zCanvas||document.getElementById('zoomCanvas');
         if(_zCanvas)_zCanvas.style.display='none';
+        _zCanvasMobile=_zCanvasMobile||document.getElementById('zoomCanvasMobile');
+        if(_zCanvasMobile)_zCanvasMobile.style.display='none';
     }
 
     function getCanvasOffset(id,clientX,clientY){
