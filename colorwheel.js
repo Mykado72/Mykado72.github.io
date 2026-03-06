@@ -72,8 +72,8 @@ window.chromaMix = (() => {
 
         const mobile = isMobile();
         // if (mobile) return
-        const size   = mobile ? 22 : 75;
-        const factor = mobile ? 6  : 4;    // zone source = size/factor px canvas
+        const size   = mobile ? 2 : 75;
+        const factor = mobile ? 2  : 4;    // zone source = size/factor px canvas
         const half   = size / 2;
         const srcPx  = size / factor;      // px canvas couverts par la loupe
 
