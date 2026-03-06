@@ -122,13 +122,10 @@ window.chromaMix = (() => {
     }
 
     // ══ PINCH-TO-ZOOM ROUE (natif JS, pas via Blazor) ════════════════════════
-    // Enregistré après le rendu du canvas pour contourner le preventDefault Blazor
-    let _pinchDotNet = null;
-
-    function initWheelPinch(dotNetRef) {
-        _pinchDotNet = dotNetRef;
+    function initWheelPinch() {
         const canvas = document.getElementById('colorWheel');
-        if (!canvas) return;
+        if (!canvas || canvas._pinchInit) return;
+        canvas._pinchInit = true;
         let startDist = 0, startZoom = 1;
 
         canvas.addEventListener('touchstart', e => {
@@ -148,9 +145,8 @@ window.chromaMix = (() => {
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (startDist > 0) {
                     const zoom = Math.min(4, Math.max(1, startZoom * dist / startDist));
-                    const e2 = wheels['colorWheel'];
-                    if (e2) drawWheel('colorWheel', e2.saturation, e2.lightness, zoom);
-                    if (_pinchDotNet) _pinchDotNet.invokeMethodAsync('OnPinchZoom', zoom);
+                    const w = wheels['colorWheel'];
+                    if (w) drawWheel('colorWheel', w.saturation, w.lightness, zoom);
                 }
                 e.preventDefault();
             }
