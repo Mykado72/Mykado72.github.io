@@ -63,80 +63,60 @@ window.chromaMix = (() => {
     }
 
     // ══ LOUPE ROUE ════════════════════════════════════════════════════════════
-    // cx_c / cy_c : coordonnées CANVAS (px internes du canvas colorWheel)
-    // Le zoom canvas est positionné en CSS dans wheel-wrapper (position:relative)
-    // → il faut convertir les coords canvas → coords CSS du wrapper
+    // cx_c / cy_c : coordonnées CANVAS internes du colorWheel
     function drawWheelZoom(srcId, zoomId, cx_c, cy_c) {
         const src  = document.getElementById(srcId);
         const zoom = document.getElementById(zoomId);
         if (!src || !zoom) return;
-        const e = wheels[srcId]; if (!e) return;
-        const {saturation, lightness} = e;
 
         const mobile = isMobile();
-        const size   = mobile ? 30 : 130;   // mobile: petit cercle net
-        const factor = mobile ? 8  : 6;    // factor élevé = moins de pixels source = plus net
+        const size   = mobile ? 44 : 130;
+        const factor = mobile ? 5  : 6;    // zone source = size/factor px canvas
         const half   = size / 2;
+        const srcPx  = size / factor;      // px canvas couverts par la loupe
 
         zoom.width  = size; zoom.height = size;
         zoom.style.display = 'block';
         zoom.style.width   = size + 'px';
         zoom.style.height  = size + 'px';
 
-        // Convertir coordonnées canvas → coordonnées CSS dans le wrapper
-        const rect   = src.getBoundingClientRect();
-        const scaleX = rect.width  / src.width;
-        const scaleY = rect.height / src.height;
-        const cssX   = cx_c * scaleX;  // position CSS du doigt/curseur dans le wrapper
-        const cssY   = cy_c * scaleY;
+        // Convertir coordonnées canvas → CSS dans le wrapper
+        const rect = src.getBoundingClientRect();
+        const cssX = cx_c * (rect.width  / src.width);
+        const cssY = cy_c * (rect.height / src.height);
 
         if (mobile) {
-            // Loupe décalée de -size : coin inférieur droit = doigt
-            // Coin inférieur droit = doigt
             zoom.style.left = (cssX - size) + 'px';
             zoom.style.top  = (cssY - size) + 'px';
         } else {
-            // Desktop : loupe centrée sur le curseur
             zoom.style.left = (cssX - half) + 'px';
             zoom.style.top  = (cssY - half) + 'px';
         }
 
-        // Rendu pixel-par-pixel depuis cx_c/cy_c (coords canvas)
-        const zc  = zoom.getContext('2d');
-        const img = zc.createImageData(size, size), data = img.data;
-        const wcx = src.width/2, wcy = src.height/2, outerR = wcx-4;
-        const srcPx = size / factor;  // nb pixels canvas couverts par la loupe
-
-        for (let py=0; py<size; py++) for (let px=0; px<size; px++) {
-            const ldx=px-half, ldy=py-half;
-            if (Math.sqrt(ldx*ldx+ldy*ldy) > half) continue;
-            // Coordonnée canvas correspondante à ce pixel de la loupe
-            const wx = cx_c + ldx * (srcPx/size);
-            const wy = cy_c + ldy * (srcPx/size);
-            const dx=wx-wcx, dy=wy-wcy, dist=Math.sqrt(dx*dx+dy*dy);
-            let r,g,b;
-            if (dist > outerR) { r=g=b=17; }
-            else {
-                let hue=Math.atan2(dy,dx)*180/Math.PI+90; if(hue<0) hue+=360;
-                const t=dist/outerR;
-                const lum=t<0.35?95-(95-lightness)*(t/0.35):lightness-(lightness-Math.max(5,lightness-28))*((t-0.35)/0.65);
-                [r,g,b]=hslToRgb(hue/360,saturation/100,lum/100);
-            }
-            const idx=(py*size+px)*4; data[idx]=r;data[idx+1]=g;data[idx+2]=b;data[idx+3]=255;
-        }
-        zc.putImageData(img,0,0);
+        // Rendu via drawImage sur le canvas source → net, sans pixellisation
+        const zc = zoom.getContext('2d');
+        zc.clearRect(0, 0, size, size);
+        zc.save();
+        zc.beginPath(); zc.arc(half, half, half - 1, 0, Math.PI*2); zc.clip();
+        zc.imageSmoothingEnabled = true;
+        zc.imageSmoothingQuality = 'high';
+        zc.drawImage(src,
+            cx_c - srcPx/2, cy_c - srcPx/2, srcPx, srcPx,  // zone source
+            0, 0, size, size                                  // destination
+        );
+        zc.restore();
         // Bordure
-        zc.beginPath();zc.arc(half,half,half-1,0,Math.PI*2);
-        zc.strokeStyle='rgba(255,255,255,0.95)';zc.lineWidth=mobile?2:3;zc.stroke();
-        zc.strokeStyle='rgba(0,0,0,0.25)';zc.lineWidth=1;zc.stroke();
+        zc.beginPath(); zc.arc(half, half, half-1, 0, Math.PI*2);
+        zc.strokeStyle='rgba(255,255,255,0.95)'; zc.lineWidth=mobile?2:3; zc.stroke();
+        zc.strokeStyle='rgba(0,0,0,0.25)'; zc.lineWidth=1; zc.stroke();
         // Croix
-        const arm=Math.max(6,Math.round(size*0.1));
-        zc.strokeStyle='rgba(255,255,255,0.9)';zc.lineWidth=1.5;
-        zc.shadowColor='rgba(0,0,0,0.9)';zc.shadowBlur=3;
+        const arm = Math.max(6, Math.round(size*0.1));
+        zc.strokeStyle='rgba(255,255,255,0.9)'; zc.lineWidth=1.5;
+        zc.shadowColor='rgba(0,0,0,0.9)'; zc.shadowBlur=3;
         zc.beginPath();
-        zc.moveTo(half-arm,half);zc.lineTo(half+arm,half);
-        zc.moveTo(half,half-arm);zc.lineTo(half,half+arm);
-        zc.stroke();zc.shadowBlur=0;
+        zc.moveTo(half-arm,half); zc.lineTo(half+arm,half);
+        zc.moveTo(half,half-arm); zc.lineTo(half,half+arm);
+        zc.stroke(); zc.shadowBlur=0;
     }
 
     function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
