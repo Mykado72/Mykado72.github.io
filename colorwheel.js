@@ -121,7 +121,41 @@ window.chromaMix = (() => {
         zc.stroke(); zc.shadowBlur=0;
     }
 
-    function hideWheelZoom(id){const z=document.getElementById(id);if(z)z.style.display='none';}
+    // ══ PINCH-TO-ZOOM ROUE (natif JS, pas via Blazor) ════════════════════════
+    // Enregistré après le rendu du canvas pour contourner le preventDefault Blazor
+    let _pinchDotNet = null;
+
+    function initWheelPinch(dotNetRef) {
+        _pinchDotNet = dotNetRef;
+        const canvas = document.getElementById('colorWheel');
+        if (!canvas) return;
+        let startDist = 0, startZoom = 1;
+
+        canvas.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                const dx = e.touches[1].clientX - e.touches[0].clientX;
+                const dy = e.touches[1].clientY - e.touches[0].clientY;
+                startDist = Math.sqrt(dx*dx + dy*dy);
+                startZoom = (wheels['colorWheel'] || {}).zoom || 1;
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', e => {
+            if (e.touches.length === 2) {
+                const dx = e.touches[1].clientX - e.touches[0].clientX;
+                const dy = e.touches[1].clientY - e.touches[0].clientY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (startDist > 0) {
+                    const zoom = Math.min(4, Math.max(1, startZoom * dist / startDist));
+                    const e2 = wheels['colorWheel'];
+                    if (e2) drawWheel('colorWheel', e2.saturation, e2.lightness, zoom);
+                    if (_pinchDotNet) _pinchDotNet.invokeMethodAsync('OnPinchZoom', zoom);
+                }
+                e.preventDefault();
+            }
+        }, { passive: false });
+    }
 
     // ══ PIPETTE ═══════════════════════════════════════════════════════════════
     let _pCtx=null, _pCanvas=null, _zCanvas=null, _zCanvasMobile=null;
@@ -249,7 +283,7 @@ window.chromaMix = (() => {
 
     return{
         drawWheel, pickPixel, getHueAt, getColorAt, isMobileView,
-        drawWheelZoom, hideWheelZoom,
+        drawWheelZoom, hideWheelZoom, initWheelPinch,
         loadPipetteFromDataUrl, pipettePreview, pipettePickColor, pipetteTouchPreview, hidePipetteZoom,
         getCanvasOffset, scrollToResults, updateHslThumbs
     };
