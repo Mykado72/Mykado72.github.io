@@ -8,7 +8,7 @@
         GitHub Pages SPA fix — inspiré de https://github.com/rafgraph/spa-github-pages
 
         Quand GitHub Pages reçoit une URL comme :
-          https://mykado72.github.io/MesListeDeCourses/courses/xxx
+          https://mykado72.github.io/MesListesDeCourses/courses/xxx
         il ne trouve pas de fichier correspondant et renvoie ce 404.html.
 
         Ce script sauvegarde l'URL complète dans sessionStorage,
@@ -17,7 +17,7 @@
     -->
     <script>
         (function () {
-            var basePath = '/MesListeDeCourses';
+            var basePath = '/MesListesDeCourses';
             var url = window.location.href;
             // Sauvegarde le chemin complet (path + query + hash)
             var path = window.location.pathname.slice(basePath.length) || '/';
