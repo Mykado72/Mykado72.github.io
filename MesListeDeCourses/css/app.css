@@ -1240,11 +1240,131 @@ body {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+    /* Sidebar cachée sur mobile */
     .sidebar { display: none; }
-    .content { margin-left: 0; padding: 20px; }
+
+    /* Contenu plein écran avec padding bas pour la bottom nav */
+    .content {
+        margin-left: 0;
+        padding: 16px 14px 90px; /* 90px = hauteur bottom nav + marge */
+    }
+
+    /* Grilles */
     .listes-grid { grid-template-columns: 1fr; }
     .produits-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Page header plus compact */
+    .page-header { flex-wrap: wrap; gap: 10px; padding-bottom: 12px; margin-bottom: 16px; }
+    .page-header h1 { font-size: 1.4rem; }
+
+    /* Cartes de liste plus compactes */
+    .liste-card-actions { gap: 2px; }
+    .btn-icon { padding: 5px 7px; font-size: 0.9rem; }
+
+    /* Modal plein écran sur mobile */
+    .modal {
+        width: 100%;
+        max-width: 100%;
+        max-height: 90vh;
+        margin: 0;
+        border-radius: 20px 20px 0 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        overflow-y: auto;
+    }
+    .modal-overlay {
+        align-items: flex-end;
+    }
+
+    /* Mode courses : items plus grands pour le touch */
+    .courses-item { padding: 14px 12px; min-height: 60px; }
+    .courses-item-info { gap: 10px; }
+    .courses-nom { font-size: 1rem; }
+
+    /* Stock rows */
+    .stock-row { flex-wrap: wrap; gap: 8px; }
+    .stock-controls { width: 100%; justify-content: flex-end; }
+
+    /* Produits grid 1 colonne sur très petit écran */
+    @media (max-width: 400px) {
+        .produits-grid { grid-template-columns: 1fr; }
+    }
+}
+
+/* ── BOTTOM NAV MOBILE ────────────────────────────────────── */
+.bottom-nav {
+    display: none; /* cachée par défaut sur desktop */
+}
+
+@media (max-width: 768px) {
+    .bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 68px;
+        background: white;
+        border-top: 1px solid #E0E0E0;
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+        z-index: 1000;
+        padding-bottom: env(safe-area-inset-bottom); /* iPhone notch */
+    }
+
+    .bottom-nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        text-decoration: none;
+        color: #9E9E9E;
+        font-size: 0.68rem;
+        font-weight: 500;
+        font-family: var(--font-body);
+        transition: color 0.15s;
+        padding: 8px 0;
+        border-top: 3px solid transparent;
+        transition: all 0.15s;
+    }
+
+    .bottom-nav-item:hover {
+        color: var(--primary);
+        background: var(--primary-bg);
+    }
+
+    .bottom-nav-item.active {
+        color: var(--primary);
+        border-top-color: var(--primary);
+        font-weight: 700;
+    }
+
+    .bottom-nav-icon { font-size: 1.5rem; line-height: 1; }
+    .bottom-nav-label { line-height: 1; }
 }
 
 /* === FONTS === */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap');
+
+/* === BLAZOR ERROR UI === */
+#blazor-error-ui {
+    background: #b32020;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0,0,0,0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem;
+    position: fixed;
+    width: 100%;
+    z-index: 9999;
+    color: white;
+    font-size: 0.9rem;
+}
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
