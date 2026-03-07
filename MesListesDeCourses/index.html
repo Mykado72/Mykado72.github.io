@@ -37,5 +37,31 @@
             }
         })();
     </script>
+
+    <!-- Export JSON : déclenche un téléchargement de fichier -->
+    <script>
+        window.downloadJson = function (fileName, json) {
+            var blob = new Blob([json], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // Détection In-App Browser (WhatsApp, Messenger, Instagram, Facebook...)
+        window.detectInAppBrowser = function () {
+            var ua = navigator.userAgent || '';
+            var isInApp =
+                /FBAN|FBAV|FB_IAB|Instagram|WhatsApp|Snapchat|Twitter|Line\/|MicroMessenger|LinkedIn/i.test(ua) ||
+                ((/iPhone|iPad|iPod/i.test(ua)) && !/Safari/i.test(ua) && !/Chrome/i.test(ua));
+            var isIOS = /iPhone|iPad|iPod/i.test(ua);
+            var isAndroid = /Android/i.test(ua);
+            return { isInApp: isInApp, isIOS: isIOS, isAndroid: isAndroid };
+        };
+    </script>
 </body>
 </html>
