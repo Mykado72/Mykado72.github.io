@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <title>Mes Listes de Courses</title>
+
+    <!--
+        GitHub Pages SPA fix — inspiré de https://github.com/rafgraph/spa-github-pages
+
+        Quand GitHub Pages reçoit une URL comme :
+          https://mykado72.github.io/MesListeDeCourses/courses/xxx
+        il ne trouve pas de fichier correspondant et renvoie ce 404.html.
+
+        Ce script sauvegarde l'URL complète dans sessionStorage,
+        puis redirige vers index.html qui la restaure via history.replaceState.
+        Blazor Router reprend alors le contrôle normalement.
+    -->
+    <script>
+        (function () {
+            var basePath = '/MesListeDeCourses';
+            var url = window.location.href;
+            // Sauvegarde le chemin complet (path + query + hash)
+            var path = window.location.pathname.slice(basePath.length) || '/';
+            var fullPath = basePath + path + window.location.search + window.location.hash;
+            sessionStorage.setItem('spa-redirect', fullPath);
+            // Redirige vers la racine du sous-dossier
+            window.location.replace(basePath + '/');
+        })();
+    </script>
+</head>
+<body>
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:Georgia,serif;">
+        <div style="font-size:3rem">🛒</div>
+        <div style="font-size:1.1rem;color:#2D6A4F;font-weight:700">Mes Listes de Courses</div>
+        <div style="color:#888;font-size:0.9rem">Redirection...</div>
+    </div>
+</body>
+</html>
