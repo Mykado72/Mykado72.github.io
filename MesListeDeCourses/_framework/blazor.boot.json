@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "MesListeDeCourses",
   "resources": {
-    "hash": "sha256-AVfDSHhW0FWTdatG8ATsFzW8PF7TxOYi50PzWC6Wt48=",
+    "hash": "sha256-7p6anPz9YV//gj1P2Tbtc3Wfg3gMB4T1fiWohGUr0k0=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -37,7 +37,7 @@
       "System.Collections.wasm": "sha256-BfAq8CyrEklkr3/J8h4ffXNFHVUsiA2PHmyT0vLHkds=",
       "System.ComponentModel.wasm": "sha256-NwdL+bCT1n5DFHznF82J+HsgMqmrgx7yfNJtf2wG9W4=",
       "System.Console.wasm": "sha256-48+KM/yDkrGB/JIlT5Nhwbvpp0MKNiz89JhLznJ5CRg=",
-      "System.Linq.wasm": "sha256-oSeJXQGBO5j20F0Z3kSU4soOxphKiy+0qlEy5n/71Og=",
+      "System.Linq.wasm": "sha256-vczzDE6r81VrptRWH0Phvx2vY76pQ/VzKd71yaj4+D4=",
       "System.Memory.wasm": "sha256-nJVbQBJn/j0C7xVbdnNFhWaPkZHsxuCcEiVBnPL3QtE=",
       "System.Net.Http.wasm": "sha256-tLDtyK9LvkgfQGx0ANcHZtSIg+zA5oLgiczqDxPvt0E=",
       "System.Net.Primitives.wasm": "sha256-e/ventvhLQqSmnoLpE6k5xnK5jZzq8AOqarcjVwH6XU=",
@@ -50,7 +50,7 @@
       "System.Threading.wasm": "sha256-l5XpIoa2lwtOPt1p4IEBdJ8SrCCJWAveGmP0Ew5UqBg=",
       "System.Web.HttpUtility.wasm": "sha256-JX0OwEN4A/nlsLRg2y46s1upskxp2yBsbiNSUFY/qHw=",
       "System.Private.CoreLib.wasm": "sha256-qfvzz6/fmtUlxvQO4XaWny7VYJgtavVho/oQnAcNs7U=",
-      "MesListeDeCourses.wasm": "sha256-rlKphLMzrmZqeTqyXhGZxwPBT3xnBtCoo8ZBJKaVZnw="
+      "MesListeDeCourses.wasm": "sha256-bYG+BQTxCaCeTlbZhqn9wwsNCTWUjzLS99cwkvcP+oo="
     }
   },
   "cacheBootResources": true,
