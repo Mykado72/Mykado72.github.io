@@ -1303,16 +1303,29 @@ body {
     .modal {
         width: 100%;
         max-width: 100%;
-        max-height: 90vh;
+        max-height: 85vh;
         margin: 0;
         border-radius: 20px 20px 0 0;
         position: fixed;
         bottom: 0;
         left: 0;
         overflow-y: auto;
+        /* Espace pour la bottom nav (68px) + safe area iPhone */
+        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
     }
     .modal-overlay {
         align-items: flex-end;
+    }
+    /* Modal en haut sur mobile (ex: ajout produit dans liste) */
+    .modal-overlay.modal-top {
+        align-items: flex-start;
+    }
+    .modal-overlay.modal-top .modal {
+        bottom: auto;
+        top: 0;
+        border-radius: 0 0 20px 20px;
+        padding-bottom: 24px;
+        padding-top: 24px;
     }
 
     /* Mode courses : items plus grands pour le touch */
