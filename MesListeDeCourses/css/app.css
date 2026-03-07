@@ -717,6 +717,88 @@ body {
 .empty-state h2 { font-family: var(--font-display); font-size: 1.4rem; color: var(--text); margin-bottom: 8px; }
 .empty-state p { margin-bottom: 24px; }
 
+.empty-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+.btn-exemples {
+    background: white;
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    padding: 11px 24px;
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-exemples:hover { background: var(--primary-bg); }
+
+/* === MODAL LISTES D'EXEMPLE === */
+.exemples-liste {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+}
+.exemple-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface);
+}
+.exemple-item:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+.exemple-item.selected { border-color: var(--primary); background: #C8F5D8; }
+.exemple-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    color: var(--primary);
+    background: white;
+    transition: all 0.15s;
+}
+.exemple-item.selected .exemple-check {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+.exemple-emoji { font-size: 1.5rem; flex-shrink: 0; }
+.exemple-info { flex: 1; text-align: left; }
+.exemple-nom { font-weight: 600; font-size: 0.92rem; color: var(--text); }
+.exemple-detail { font-size: 0.78rem; color: var(--text-2); margin-top: 2px; }
+.exemples-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 4px 0 8px;
+    border-top: 1px solid var(--border);
+}
+.btn-select-all {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-family: var(--font-body);
+}
+.btn-select-all:hover { text-decoration: underline; }
+
 /* === MODAL COCHE (saisie quantité réelle) === */
 .modal-coche { max-width: 380px; }
 
