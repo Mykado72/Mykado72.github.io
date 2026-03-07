@@ -1,0 +1,22 @@
+{
+  "name": "Mes Listes de Courses",
+  "short_name": "Mes Courses",
+  "description": "Gérez vos listes de courses facilement",
+  "start_url": "/MesListeDeCourses/",
+  "scope": "/MesListeDeCourses/",
+  "display": "standalone",
+  "background_color": "#F7F5F0",
+  "theme_color": "#2D6A4F",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}
