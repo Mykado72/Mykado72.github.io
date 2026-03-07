@@ -1303,16 +1303,18 @@ body {
     .modal {
         width: 100%;
         max-width: 100%;
-        max-height: 90vh;
+        max-height: calc(100vh - 68px - env(safe-area-inset-bottom) - 16px);
         margin: 0;
         border-radius: 20px 20px 0 0;
         position: fixed;
-        bottom: 0;
+        bottom: calc(68px + env(safe-area-inset-bottom));
         left: 0;
         overflow-y: auto;
+        padding-bottom: 8px;
     }
     .modal-overlay {
         align-items: flex-end;
+        padding-bottom: 0;
     }
 
     /* Mode courses : items plus grands pour le touch */
@@ -1405,4 +1407,154 @@ body {
     position: absolute;
     right: 0.75rem;
     top: 0.5rem;
+}
+
+/* ── AMÉLIORATIONS INDEX ──────────────────────────────────── */
+
+/* Page header avec actions groupées */
+.page-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Petit bouton exemples dans le header */
+.btn-exemples-small {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: var(--font-body);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s;
+    line-height: 1;
+    white-space: nowrap;
+}
+.btn-exemples-small:hover { background: var(--primary-bg); border-color: var(--primary-light); color: var(--primary); }
+
+/* "Ne plus proposer" lien discret sous le modal exemples */
+.exemples-ne-plus-proposer {
+    margin-top: 12px;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+}
+.btn-link-subtle {
+    background: none;
+    border: none;
+    color: var(--text-2);
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+.btn-link-subtle:hover {
+    color: #c62828;
+    background: #ffebee;
+}
+
+/* Hint copie liste */
+.copy-hint {
+    font-size: 0.82rem;
+    color: var(--primary);
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+/* Séparateur dans le modal création */
+.form-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0 20px;
+}
+
+/* ── CATALOGUE AJOUT PRODUITS (EditeListe + MonStock) ─────── */
+
+.ajout-cat-filters {
+    margin-top: 10px;
+    padding-bottom: 2px;
+}
+
+.ajout-catalogue {
+    margin-top: 4px;
+}
+
+.ajout-catalogue-modal {
+    max-height: 40vh;
+    overflow-y: auto;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    background: var(--bg);
+}
+
+.ajout-cat-section {
+    margin-bottom: 16px;
+}
+.ajout-cat-section:last-child { margin-bottom: 0; }
+
+.ajout-cat-header {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-2);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 4px 2px 8px;
+}
+
+.ajout-produits-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.ajout-produit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 12px 6px 8px;
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+.ajout-produit-btn:hover {
+    background: var(--primary-bg);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+.ajout-produit-btn:active {
+    transform: scale(0.96);
+}
+
+.ajout-produit-emoji { font-size: 1rem; line-height: 1; }
+.ajout-produit-nom { flex: 1; }
+.ajout-produit-plus {
+    font-size: 1rem;
+    color: var(--primary);
+    font-weight: 700;
+    opacity: 0.7;
+}
+.ajout-stock-hint {
+    font-size: 0.72rem;
+    color: var(--text-3);
+    background: var(--primary-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+/* Sur mobile, le catalogue en page (EditeListe) est plus compact */
+@media (max-width: 768px) {
+    .ajout-produit-btn { font-size: 0.85rem; padding: 8px 12px 8px 8px; }
+    .ajout-catalogue-modal { max-height: 35vh; }
 }

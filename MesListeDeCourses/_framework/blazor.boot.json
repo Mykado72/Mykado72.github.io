@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "MesListeDeCourses",
   "resources": {
-    "hash": "sha256-7p6anPz9YV//gj1P2Tbtc3Wfg3gMB4T1fiWohGUr0k0=",
+    "hash": "sha256-YCs6i/qqTuRO37nMpk8QeloQubiJVD099ZziAYzPjHU=",
     "jsModuleNative": {
       "dotnet.native.js": "sha256-4g0GzvOXSwZvTLca4PrWJkoeltz+V9IF/hEFDcnVros="
     },
@@ -50,7 +50,7 @@
       "System.Threading.wasm": "sha256-l5XpIoa2lwtOPt1p4IEBdJ8SrCCJWAveGmP0Ew5UqBg=",
       "System.Web.HttpUtility.wasm": "sha256-JX0OwEN4A/nlsLRg2y46s1upskxp2yBsbiNSUFY/qHw=",
       "System.Private.CoreLib.wasm": "sha256-qfvzz6/fmtUlxvQO4XaWny7VYJgtavVho/oQnAcNs7U=",
-      "MesListeDeCourses.wasm": "sha256-bYG+BQTxCaCeTlbZhqn9wwsNCTWUjzLS99cwkvcP+oo="
+      "MesListeDeCourses.wasm": "sha256-O2OYaAA2fxuShLoMKOGL8nkTXFNnY0sG792n/aIJ6Tk="
     }
   },
   "cacheBootResources": true,
