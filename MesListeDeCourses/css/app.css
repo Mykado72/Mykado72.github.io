@@ -1487,3 +1487,25 @@ body {
     padding: 5px 8px;
     font-size: 0.85rem;
 }
+
+/* === MODAL PRODUIT HEADER (MonStock + EditeListe) === */
+.modal-produit-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+.modal-produit-emoji { font-size: 1.8rem; flex-shrink: 0; }
+.modal-produit-nom {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+}
+.modal-produit-cat {
+    font-size: 0.78rem;
+    color: var(--text-2);
+    margin-top: 2px;
+}
