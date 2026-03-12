@@ -10,14 +10,14 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0e0e12;
-      --bg2: #16161f;
-      --border: #2a2a3a;
-      --accent: #c8ff57;
-      --accent2: #57c8ff;
-      --accent3: #ff8c57;
-      --text: #d4d4e8;
-      --muted: #5a5a7a;
+      --bg: #f4f4f0;
+      --bg2: #ffffff;
+      --border: #d8d8cc;
+      --accent: #2d7a3a;
+      --accent2: #1a6b8a;
+      --accent3: #b85a1a;
+      --text: #2a2a2a;
+      --muted: #7a7a6a;
       --mono: 'Share Tech Mono', monospace;
       --sans: 'Outfit', sans-serif;
     }
@@ -36,7 +36,7 @@
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
       pointer-events: none;
       z-index: 0;
-      opacity: 0.6;
+      opacity: 0.4;
     }
 
     body::after {
@@ -47,7 +47,7 @@
       transform: translateX(-50%);
       width: 80vw;
       height: 60vh;
-      background: radial-gradient(ellipse, rgba(200,255,87,0.05) 0%, transparent 70%);
+      background: radial-gradient(ellipse, rgba(45,122,58,0.06) 0%, transparent 70%);
       pointer-events: none;
       z-index: 0;
     }
@@ -84,7 +84,7 @@
       font-weight: 400;
       letter-spacing: -1px;
       line-height: 1.1;
-      color: #fff;
+      color: #1a1a1a;
     }
 
     h1 span { color: var(--accent); }
@@ -131,7 +131,7 @@
       border-radius: 4px;
       text-decoration: none;
       color: inherit;
-      transition: border-color 0.2s, background 0.2s, transform 0.2s;
+      transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
       position: relative;
       overflow: hidden;
     }
@@ -148,15 +148,16 @@
     }
 
     .card:hover {
-      background: #1a1a24;
+      background: #fafaf6;
       transform: translateX(4px);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
 
     .card:hover::before { transform: scaleY(1); }
 
     .card.github { --card-accent: var(--accent3); }
-    .card.github:hover { border-color: rgba(255,140,87,0.2); }
-    .card:not(.github):hover { border-color: rgba(200,255,87,0.2); }
+    .card.github:hover { border-color: rgba(184,90,26,0.25); }
+    .card:not(.github):hover { border-color: rgba(45,122,58,0.25); }
 
     .card-icon {
       font-size: 26px;
@@ -170,7 +171,7 @@
     .card-title {
       font-family: var(--mono);
       font-size: 16px;
-      color: #fff;
+      color: #1a1a1a;
       letter-spacing: 0.5px;
     }
 
@@ -194,21 +195,21 @@
       letter-spacing: 1px;
       padding: 2px 8px;
       border-radius: 2px;
-      background: rgba(200,255,87,0.08);
+      background: rgba(45,122,58,0.08);
       color: var(--accent);
-      border: 1px solid rgba(200,255,87,0.15);
+      border: 1px solid rgba(45,122,58,0.2);
     }
 
     .pill.blue {
-      background: rgba(87,200,255,0.08);
+      background: rgba(26,107,138,0.08);
       color: var(--accent2);
-      border-color: rgba(87,200,255,0.15);
+      border-color: rgba(26,107,138,0.2);
     }
 
     .pill.orange {
-      background: rgba(255,140,87,0.08);
+      background: rgba(184,90,26,0.08);
       color: var(--accent3);
-      border-color: rgba(255,140,87,0.15);
+      border-color: rgba(184,90,26,0.2);
     }
 
     .card-arrow {
@@ -221,6 +222,29 @@
     .card:hover .card-arrow {
       color: var(--card-accent, var(--accent));
       transform: translateX(4px);
+    }
+
+    /* Screenshots preview for MesListes */
+    .screenshots {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .screenshots img {
+      width: 50%;
+      height: 90px;
+      object-fit: cover;
+      object-position: top left;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: transform 0.2s;
+    }
+
+    .card:hover .screenshots img {
+      transform: scale(1.02);
     }
 
     footer {
@@ -297,11 +321,29 @@
       <div class="section-label">// apps web</div>
       <div class="projects" style="margin-bottom: 40px;">
 
+        <a class="card" href="https://mykado72.github.io/MesListesDeCourses/">
+          <div class="card-icon">🛒</div>
+          <div class="card-body">
+            <div class="card-title">MesListesDeCourses</div>
+            <div class="card-desc">Application de gestion de listes de courses. Créez et organisez vos listes, gérez votre catalogue produits par catégorie, et suivez votre stock à la maison.</div>
+            <div class="card-tags">
+              <span class="pill blue">PWA</span>
+              <span class="pill">HTML / JS</span>
+              <span class="pill">LocalStorage</span>
+            </div>
+            <div class="screenshots">
+              <img src="img/mes-listes-de-courses--vue-listes.png"  alt="Mes Listes de Courses — vue listes" />
+              <img src="img/mes-listes-de-courses--catalogue-produits.png"  alt="Mes Listes de Courses — catalogue produits" />
+            </div>
+          </div>
+          <div class="card-arrow">→</div>
+        </a>
+
         <a class="card" href="chromamix/">
           <div class="card-icon">🎨</div>
           <div class="card-body">
             <div class="card-title">ChromaMix</div>
-            <div class="card-desc">Calculateur de mélanges de peinture. Sélectionnez une couleur à partir d'une photo ou du nuancier et obtenez les formules de mélange pour obtenir la même couleur en peintures acrylique ou aquarelle .</div>
+            <div class="card-desc">Calculateur de mélanges de peinture. Sélectionnez une couleur à partir d'une photo ou du nuancier et obtenez les formules de mélange pour obtenir la même couleur en peintures acrylique ou aquarelle.</div>
             <div class="card-tags">
               <span class="pill">Blazor WASM</span>
               <span class="pill blue">PWA</span>
@@ -312,13 +354,14 @@
         </a>
 
         <a class="card" href="blazor-ui-editor.html">
+          <div class="card-icon">🖊️</div>
           <div class="card-body">
             <div class="card-title">blazor-ui-editor</div>
-            <div class="card-desc">Editeur d'interface utilisateur pour en blazor</div>
+            <div class="card-desc">Editeur d'interface utilisateur pour Blazor</div>
             <div class="card-tags">
               <span class="pill">Blazor WASM</span>
               <span class="pill blue">PWA</span>
-             <span class="pill">JS</span>
+              <span class="pill">JS</span>
             </div>
           </div>
           <div class="card-arrow">→</div>
