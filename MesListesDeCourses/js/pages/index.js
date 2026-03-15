@@ -70,25 +70,12 @@ export function renderIndex(container) {
               h('button', { class: 'btn-icon btn-danger', title: 'Supprimer', onclick: e => { e.stopPropagation(); confirmerSuppression(l); } }, '🗑️')
             )
           ),
-          // Click sur la carte → éditer le contenu
-          (() => { /* attach click */ })()
         );
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', () => navigate(`#/liste/${l.id}`));
+        return card;
       })
     );
-  }
-
-  // Rendre les cartes cliquables après render
-  function attachCardClicks() {
-    container.querySelectorAll('.liste-card').forEach((card, i) => {
-      const listes = getListes();
-      if (!listes[i]) return;
-      const id = listes[i].id;
-      card.style.cursor = 'pointer';
-      card.addEventListener('click', () => navigate(`#/liste/${id}`));
-    });
-    container.querySelectorAll('.btn-courses').forEach(btn => {
-      btn.addEventListener('click', e => { e.stopPropagation(); navigate(`#/courses/${btn.dataset.id}`); });
-    });
   }
 
   // ── Modal créer/éditer une liste ─────────────────────────
@@ -218,10 +205,5 @@ export function renderIndex(container) {
 
   onStoreChange(draw);
   draw();
-  // Attach card clicks after each draw
-  const obs = new MutationObserver(attachCardClicks);
-  obs.observe(container, { childList: true });
-  attachCardClicks();
-
-  return () => { offStoreChange(draw); obs.disconnect(); };
+  return () => offStoreChange(draw);
 }
