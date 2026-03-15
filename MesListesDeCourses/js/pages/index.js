@@ -51,7 +51,7 @@ export function renderIndex(container) {
     return h('div', { class: 'listes-grid' },
       ...listes.map(l => {
         const pct = progression(l);
-        return h('div', { class: 'liste-card', style: `--card-color: ${l.couleur}` },
+        const card = h('div', { class: 'liste-card', style: `--card-color: ${l.couleur}` },
           h('div', { class: 'card-header' },
             h('span', { class: 'card-emoji' }, l.emoji),
             h('div', { class: 'card-meta' },
@@ -65,11 +65,12 @@ export function renderIndex(container) {
           h('div', { class: 'card-footer' },
             h('span', { class: 'card-count' }, `${l.elements.length} produit(s)`),
             h('div', { class: 'card-actions' },
+              h('button', { class: 'btn-icon', title: 'Faire les courses', onclick: e => { e.stopPropagation(); navigate(`#/courses/${l.id}`); } }, '🛒'),
               h('button', { class: 'btn-icon', title: 'Modifier', onclick: e => { e.stopPropagation(); openListeModal(l); } }, '✏️'),
               h('button', { class: 'btn-icon', title: 'Dupliquer', onclick: e => { e.stopPropagation(); const c = dupliquerListe(l.id); navigate(`#/liste/${c.id}`); } }, '📋'),
               h('button', { class: 'btn-icon btn-danger', title: 'Supprimer', onclick: e => { e.stopPropagation(); confirmerSuppression(l); } }, '🗑️')
             )
-          ),
+          )
         );
         card.style.cursor = 'pointer';
         card.addEventListener('click', () => navigate(`#/liste/${l.id}`));

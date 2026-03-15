@@ -68,18 +68,20 @@ export function renderProduits(container) {
             h('div', { class: 'category-section' },
               h('div', { class: 'category-header' }, h('span', {}, `${getCatEmoji(cat)} ${cat}`), h('span', { class: 'category-count' }, prods.length)),
               h('div', { class: 'produits-grid' },
-                ...prods.map(p => h('div', { class: 'produit-card' },
-                  h('div', { class: 'produit-card-header' },
+                ...prods.map(p =>
+                  h('div', { class: 'produit-card' },
                     h('span', { class: 'produit-emoji' }, p.emoji),
-                    h('div', { class: 'produit-card-actions' },
+                    h('div', { class: 'produit-info' },
+                      h('div', { class: 'produit-nom' }, p.nom),
+                      h('div', { class: 'produit-meta' }, `${p.unite}`)
+                    ),
+                    h('div', { class: 'produit-actions' },
                       h('button', { class: 'btn-icon', title: 'Modifier', onclick: () => openProduitModal(p) }, '✏️'),
                       h('button', { class: 'btn-icon variante-icon', title: 'Créer une variante', onclick: () => dupliquerProduit(p.id) }, '±'),
                       h('button', { class: 'btn-icon btn-danger', title: 'Supprimer', onclick: () => confirmerSuppression(p) }, '🗑️')
                     )
-                  ),
-                  h('div', { class: 'produit-nom' }, p.nom),
-                  h('div', { class: 'produit-meta' }, `${p.categorie} • ${p.unite}`)
-                ))
+                  )
+                )
               )
             )
           )
