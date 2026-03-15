@@ -51,24 +51,30 @@ export function renderIndex(container) {
     return h('div', { class: 'listes-grid' },
       ...listes.map(l => {
         const pct = progression(l);
+        const coches = l.elements.filter(e => e.estCoche).length;
+        const total  = l.elements.length;
+
         const card = h('div', { class: 'liste-card', style: `--card-color: ${l.couleur}` },
-          h('div', { class: 'card-header' },
-            h('span', { class: 'card-emoji' }, l.emoji),
-            h('div', { class: 'card-meta' },
-              h('div', { class: 'card-nom' }, l.nom),
-              l.description ? h('div', { class: 'card-desc' }, l.description) : null
-            )
-          ),
-          h('div', { class: 'card-progress-bar' },
-            h('div', { class: 'card-progress-fill', style: `width:${pct.toFixed(0)}%` })
-          ),
-          h('div', { class: 'card-footer' },
-            h('span', { class: 'card-count' }, `${l.elements.length} produit(s)`),
-            h('div', { class: 'card-actions' },
+          // Header : emoji + actions
+          h('div', { class: 'liste-card-header' },
+            h('span', { class: 'liste-emoji' }, l.emoji),
+            h('div', { class: 'liste-card-actions' },
               h('button', { class: 'btn-icon', title: 'Faire les courses', onclick: e => { e.stopPropagation(); navigate(`#/courses/${l.id}`); } }, '🛒'),
               h('button', { class: 'btn-icon', title: 'Modifier', onclick: e => { e.stopPropagation(); openListeModal(l); } }, '✏️'),
               h('button', { class: 'btn-icon', title: 'Dupliquer', onclick: e => { e.stopPropagation(); const c = dupliquerListe(l.id); navigate(`#/liste/${c.id}`); } }, '📋'),
               h('button', { class: 'btn-icon btn-danger', title: 'Supprimer', onclick: e => { e.stopPropagation(); confirmerSuppression(l); } }, '🗑️')
+            )
+          ),
+          // Body : nom, description, stats, barre
+          h('div', { class: 'liste-card-body' },
+            h('div', { class: 'liste-nom' }, l.nom),
+            l.description ? h('div', { class: 'liste-desc' }, l.description) : null,
+            h('div', { class: 'liste-stats' },
+              h('span', {}, `${total} produit(s)`),
+              total > 0 ? h('span', { class: 'progress-text' }, `${coches}/${total} cochés`) : null
+            ),
+            h('div', { class: 'progress-bar' },
+              h('div', { class: 'progress-fill', style: `width:${pct.toFixed(0)}%` })
             )
           )
         );
