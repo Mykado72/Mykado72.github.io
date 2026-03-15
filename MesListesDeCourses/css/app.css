@@ -1631,3 +1631,28 @@ body {
 }
 .param-about-row:last-child { border-bottom: none; }
 .param-about-row strong { color: var(--text); }
+
+/* === TOAST === */
+.toast {
+    position: fixed;
+    bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 12px 20px;
+    box-shadow: var(--shadow-lg);
+    font-weight: 600;
+    font-size: .9rem;
+    opacity: 0;
+    transition: opacity .25s, transform .25s;
+    z-index: 3000;
+    white-space: nowrap;
+    border: 1.5px solid var(--border);
+}
+.toast.toast-visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.toast-ok    { border-color: var(--primary-light); color: var(--primary); }
+.toast.toast-error { border-color: #fca5a5; color: var(--danger); }
+
+/* === NAV active class (JS remplace NavLink Blazor) === */
+.nav-item.active      { background: var(--primary-bg); color: var(--primary); font-weight: 700; }
+.bottom-nav-item.active { color: var(--primary); border-top-color: var(--primary); font-weight: 700; }
