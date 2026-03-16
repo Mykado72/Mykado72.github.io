@@ -4,10 +4,13 @@ import { getListe, modifierListe, getStockByProduit, getProduits,
 import { CATEGORIES, getCatEmoji } from '../data.js';
 import { navigate } from '../router.js';
 import { h, render, openModal, closeModal } from '../ui.js';
+import { isVoiceSupported, startVoice, matchVoiceToProduits } from '../voice.js';
 
 export function renderEditeListe(container, { id }) {
   let catFiltre = '';
   let recherche = '';
+  let _voiceStop = null;
+  let _voiceActive = false;
 
   function draw() {
     const liste = getListe(id);
@@ -188,6 +191,45 @@ export function renderEditeListe(container, { id }) {
         )
       );
     }, { top: true, small: true });
+  }
+
+  function toggleVoice() {
+    if (_voiceActive) {
+      _voiceStop?.();
+      _voiceStop = null;
+      _voiceActive = false;
+      draw();
+      return;
+    }
+    _voiceActive = true;
+    draw();
+    _voiceStop = startVoice({
+      onResult: (text) => {
+        _voiceActive = false;
+        _voiceStop = null;
+        const liste = getListe(id);
+        if (!liste) { draw(); return; }
+        const deja = new Set(liste.elements.map(e => e.produitId));
+        const candidats = matchVoiceToProduits(text, getProduits().filter(p => !deja.has(p.id)));
+        if (candidats.length === 0) {
+          recherche = text;
+          draw();
+        } else if (candidats.length === 1) {
+          ouvrirModalAjout(liste, candidats[0]);
+          draw();
+        } else {
+          // Plusieurs candidats → affiche un choix
+          recherche = text;
+          draw();
+        }
+      },
+      onEnd: () => { _voiceActive = false; _voiceStop = null; draw(); },
+      onError: (msg) => {
+        _voiceActive = false; _voiceStop = null;
+        import('../ui.js').then(({ toast }) => toast(msg, 'error'));
+        draw();
+      }
+    });
   }
 
   function changerQty(liste, el, delta) {

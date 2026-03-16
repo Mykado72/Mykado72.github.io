@@ -8,6 +8,7 @@ import { renderProduits }   from './pages/produits.js';
 import { renderStock }      from './pages/stock.js';
 import { renderParametres } from './pages/parametres.js';
 import { BUILD_VERSION, BUILD_DATE } from './data.js';
+import { initTheme, toggleTheme, getCurrentTheme } from './theme.js';
 
 // ── Service Worker ────────────────────────────────────────
 if ('serviceWorker' in navigator) {
@@ -36,6 +37,7 @@ function buildLayout() {
         <div class="nav-links" id="sidebar-nav"></div>
         <div class="sidebar-footer">
           <div class="app-version">v${BUILD_VERSION} — ${BUILD_DATE}</div>
+          <button id="theme-toggle" class="btn-theme-toggle" title="Changer de thème">🌙</button>
           <div class="app-dedication">Réalisé par<br><strong>Mickael LEHAY</strong><br>pour lui même 💚</div>
         </div>
       </nav>
@@ -119,7 +121,20 @@ document.addEventListener('DOMContentLoaded', () => {
   // 1. Construit le layout (crée #page-content, #sidebar-nav, #bottom-nav)
   buildLayout();
 
-  // 2. Détecte les In-App browsers
+  // 2. Initialise le thème (avant tout render)
+  initTheme();
+  document.getElementById('theme-toggle')?.addEventListener('click', () => {
+    const theme = toggleTheme();
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  });
+  // Icône initiale
+  setTimeout(() => {
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = getCurrentTheme() === 'dark' ? '☀️' : '🌙';
+  }, 0);
+
+  // 3. Détecte les In-App browsers
   detectInAppBrowser();
 
   // 3. Met à jour la nav à chaque changement de hash
