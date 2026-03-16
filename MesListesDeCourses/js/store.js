@@ -38,6 +38,19 @@ export function charger() {
     _listes = []; _stock = [];
   }
   sauvegarder(); // premier lancement : persiste les produits par défaut
+
+  // Vérifie les listes récurrentes
+  import('./recurring.js').then(({ verifierEcheances }) => {
+    verifierEcheances(_listes, (listeId) => {
+      const liste = _listes.find(l => l.id === listeId);
+      if (liste) {
+        liste.elements.forEach(e => e.estCoche = false);
+        liste.modifieLe = new Date().toISOString();
+      }
+    });
+    sauvegarder(); notify();
+  });
+
   notify();
 }
 

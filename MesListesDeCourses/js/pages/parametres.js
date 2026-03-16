@@ -1,5 +1,7 @@
 // ── Page : Paramètres ─────────────────────────────────────
 import { exporterJson, importerJson, viderToutesDonnees, getListes, getProduits, getStock } from '../store.js';
+import { getStats, viderHistorique } from '../history.js';
+import { getRecurrence, setRecurrence, getPeriodes } from '../recurring.js';
 import { BUILD_VERSION, BUILD_DATE } from '../data.js';
 import { h, render, openModal, closeModal, toast } from '../ui.js';
 import { navigate } from '../router.js';
@@ -56,6 +58,69 @@ export function renderParametres(container) {
               )
             )
       ),
+
+      // ── Listes récurrentes
+      (() => {
+        const listes = getListes();
+        const periodes = getPeriodes();
+        if (!listes.length) return null;
+        return h('div', { class: 'param-section' },
+          h('div', { class: 'param-section-title' }, '🔄 Listes récurrentes'),
+          h('p', { class: 'param-desc' }, 'Réinitialisez automatiquement une liste à intervalle régulier (décocher tous les articles).'),
+          h('div', {},
+            ...listes.map(l => {
+              const rec = getRecurrence(l.id);
+              const sel = h('select', { class: 'form-input', style: 'width:auto;' });
+              const optNone = h('option', { value: '' }, 'Désactivé');
+              if (!rec) optNone.selected = true;
+              sel.append(optNone);
+              Object.entries(periodes).forEach(([key, val]) => {
+                const opt = h('option', { value: key }, val.label);
+                if (rec?.periode === key) opt.selected = true;
+                sel.append(opt);
+              });
+              sel.addEventListener('change', e => {
+                setRecurrence(l.id, e.target.value || null);
+                draw();
+              });
+              return h('div', { class: 'param-about-row' },
+                h('span', {}, `${l.emoji} ${l.nom}`),
+                sel
+              );
+            })
+          )
+        );
+      })(),
+
+      // ── Historique
+      (() => {
+        const stats = getStats();
+        return h('div', { class: 'param-section' },
+          h('div', { class: 'param-section-title' }, '📊 Historique des courses'),
+          stats ? h('div', {},
+            h('div', { class: 'param-about' },
+              h('div', { class: 'param-about-row' }, h('span', {}, 'Sessions enregistrées'), h('strong', {}, stats.nbSessions)),
+              h('div', { class: 'param-about-row' }, h('span', {}, 'Articles achetés au total'), h('strong', {}, stats.totalArticles)),
+              h('div', { class: 'param-about-row' }, h('span', {}, 'Première session'), h('strong', {}, stats.firstDate)),
+              h('div', { class: 'param-about-row' }, h('span', {}, 'Dernière session'), h('strong', {}, stats.lastDate))
+            ),
+            stats.frequents.length ? h('div', { style: 'margin-top:12px;' },
+              h('div', { style: 'font-size:.8rem;color:var(--text-2);margin-bottom:6px;' }, '⭐ Vos produits les plus achetés :'),
+              h('div', { style: 'display:flex;flex-wrap:wrap;gap:6px;' },
+                ...stats.frequents.map(p =>
+                  h('span', { class: 'filter-btn', style: 'cursor:default;' }, `${p.emoji} ${p.nom} ×${p.count}`)
+                )
+              )
+            ) : null,
+            h('button', { class: 'btn-param btn-danger-param', style: 'margin-top:12px;',
+              onclick: () => { if (confirm("Effacer tout l'historique ?")) { viderHistorique(); draw(); } }
+            },
+              h('span', { class: 'btn-param-icon' }, '🗑️'),
+              h('div', {}, h('div', { class: 'btn-param-label' }, "Effacer l'historique"))
+            )
+          ) : h('p', { class: 'param-desc' }, "Aucune session enregistrée pour l'instant. Terminez vos premières courses pour voir les statistiques ici.")
+        );
+      })(),
 
       // ── À propos
       h('div', { class: 'param-section' },

@@ -1764,3 +1764,102 @@ body {
     margin: 8px 0;
     font-family: monospace;
 }
+
+/* === ROUE CRANTÉE (SPINNER) === */
+.spinner-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+}
+.spinner-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    font-size: 1.3rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    color: var(--text);
+}
+.spinner-btn:hover { background: var(--primary-bg); border-color: var(--primary); }
+.spinner-btn:active { transform: scale(0.92); }
+
+.spinner-track {
+    flex: 1;
+    height: 44px;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border);
+    border-radius: 22px;
+    cursor: ew-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    overflow: hidden;
+    position: relative;
+    touch-action: none;
+    user-select: none;
+}
+.spinner-track::before {
+    content: '↔';
+    position: absolute;
+    font-size: 0.7rem;
+    color: var(--text-3);
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.spinner-track.spinning {
+    background: var(--primary-bg);
+    border-color: var(--primary-light);
+}
+.spinner-tick {
+    width: 3px;
+    height: 20px;
+    background: var(--border);
+    border-radius: 2px;
+    transition: transform 0.1s ease;
+    flex-shrink: 0;
+}
+.spinner-tick:nth-child(odd)  { height: 28px; background: var(--text-3); }
+.spinner-tick:nth-child(even) { height: 16px; background: var(--border); }
+
+.spinner-display {
+    font-size: 1.4rem;
+    font-weight: 700;
+    min-width: 2.5ch;
+    text-align: center;
+    color: var(--primary);
+    font-family: var(--font-display);
+    transition: transform 0.15s ease;
+}
+.spinner-display.spinner-bump {
+    transform: scale(1.25);
+}
+.spinner-unit {
+    font-size: 0.8rem;
+    color: var(--text-2);
+    min-width: 2.5ch;
+}
+
+/* === SUGGESTIONS INTELLIGENTES === */
+.suggestions-smart {
+    background: var(--primary-bg);
+    border: 1.5px solid var(--primary-light);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}
+.suggestions-smart-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.suggestion-smart { background: rgba(255,255,255,0.6); }
+[data-theme="dark"] .suggestion-smart { background: rgba(255,255,255,0.05); }

@@ -6,7 +6,9 @@ import { getCatEmoji } from '../data.js';
 import { navigate } from '../router.js';
 import { h, render, openModal, closeModal } from '../ui.js';
 import { addSwipe } from '../swipe.js';
+import { createSpinner } from '../spinner.js';
 import { createSession, joinSession, destroySession, isConnected } from '../sync.js';
+import { enregistrerSession } from '../history.js';
 
 export function renderCourses(container, { id }) {
   const qtysReelles = {};
@@ -169,19 +171,25 @@ export function renderCourses(container, { id }) {
   // ── Modal cocher ──────────────────────────────────────────
   function ouvrirCoche(el) {
     let qty = qtysReelles[el.id] ?? el.quantite;
+    let spinner;
     openModal((box) => {
-      const qtyInput = h('input', { class: 'form-input qty-input-center', type: 'number',
-        inputmode: 'numeric', min: '0', step: '1', value: qty });
       const diffHint = h('div', { class: 'qty-diff-hint' });
-
-      function updateDiff() {
-        qty = parseFloat(qtyInput.value) || 0;
+      spinner = createSpinner({
+        value: qty, min: 0, step: 1, unit: el.unite,
+        onChange: v => {
+          const d = v - el.quantite;
+          diffHint.textContent = d !== 0
+            ? `⚠️ Différence : ${d > 0 ? '+' : ''}${fmtQty(d)} ${el.unite} par rapport au prévu`
+            : '';
+          diffHint.style.display = d !== 0 ? '' : 'none';
+          if (navigator.vibrate) navigator.vibrate(15);
+        }
+      });
+      // Déclenche diff hint si valeur initiale différente
+      if (qty !== el.quantite) {
         const d = qty - el.quantite;
-        diffHint.textContent = d !== 0 ? `⚠️ Différence : ${d > 0 ? '+' : ''}${fmtQty(d)} ${el.unite} par rapport au prévu` : '';
-        diffHint.style.display = d !== 0 ? '' : 'none';
+        diffHint.textContent = `⚠️ Différence : ${d > 0 ? '+' : ''}${fmtQty(d)} ${el.unite} par rapport au prévu`;
       }
-      qtyInput.addEventListener('input', updateDiff);
-      if (qty !== el.quantite) updateDiff();
 
       render(box,
         h('div', { class: 'coche-modal-header' },
@@ -190,22 +198,17 @@ export function renderCourses(container, { id }) {
             h('div', { class: 'coche-prevue' }, `Prévu : ${el.quantite} ${el.unite}`))
         ),
         h('div', { class: 'form-group' },
-          h('label', {}, 'Quantité prise en magasin'),
-          h('div', { class: 'stock-qty-editor' },
-            h('button', { class: 'qty-btn qty-btn-lg', type: 'button',
-              onclick: () => { qty = Math.max(0, qty - 1); qtyInput.value = qty; updateDiff(); } }, '−'),
-            qtyInput,
-            h('button', { class: 'qty-btn qty-btn-lg', type: 'button',
-              onclick: () => { qty++; qtyInput.value = qty; updateDiff(); } }, '＋'),
-            h('span', { class: 'qty-unite-label' }, el.unite)
-          ),
+          h('label', {}, '↔ Faites glisser la roue pour ajuster'),
+          spinner.el,
           diffHint
         ),
         h('div', { class: 'modal-actions' },
           h('button', { class: 'btn-secondary', onclick: closeModal }, 'Annuler'),
           h('button', { class: 'btn-primary', onclick: () => {
-            qtysReelles[el.id] = qty;
-            cocherElement(id, el.id, qty > 0);
+            const v = spinner.getValue();
+            qtysReelles[el.id] = v;
+            cocherElement(id, el.id, v > 0);
+            if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
             closeModal();
             checkFin();
           }}, '🛒 Mettre dans le panier')
@@ -403,6 +406,7 @@ export function renderCourses(container, { id }) {
         ) : null,
         h('div', { class: 'fin-courses-actions', style: 'margin-top:16px;' },
           h('button', { class: 'fin-btn fin-btn-keep', onclick: () => {
+            enregistrerSession(liste.nom, coches, id);
             Object.keys(qtysReelles).forEach(k => delete qtysReelles[k]);
             reinitialiserCoches(id); closeModal(); cleanup();
           }},
@@ -411,6 +415,7 @@ export function renderCourses(container, { id }) {
               h('span', { class: 'fin-btn-desc' }, 'Décocher tout'))
           ),
           h('button', { class: 'fin-btn fin-btn-delete', onclick: () => {
+            enregistrerSession(liste.nom, coches, id);
             supprimerListe(id); closeModal(); cleanup();
           }},
             h('span', { class: 'fin-btn-icon' }, '🗑️'),
