@@ -7,6 +7,7 @@ import { renderCourses }    from './pages/courses.js';
 import { renderProduits }   from './pages/produits.js';
 import { renderStock }      from './pages/stock.js';
 import { renderParametres } from './pages/parametres.js';
+import { renderMenu }       from './pages/menu.js';
 import { BUILD_VERSION, BUILD_DATE } from './data.js';
 import { initTheme, toggleTheme, getCurrentTheme } from './theme.js';
 
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { hash: '#/',           label: 'Mes Listes',       icon: '📋', mobileLabel: 'Mes Listes' },
   { hash: '#/produits',   label: 'Produits',          icon: '🏪', mobileLabel: 'Produits' },
   { hash: '#/stock',      label: 'Stock à la maison', icon: '🏠', mobileLabel: 'Stock' },
+  { hash: '#/menu',       label: 'Menu semaine',      icon: '🍽️', mobileLabel: 'Menu' },
   { hash: '#/parametres', label: 'Paramètres',        icon: '⚙️', mobileLabel: 'Paramètres' },
 ];
 
@@ -147,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   route('/courses/:id',  params => setPage(renderCourses,    params));
   route('/produits',     params => setPage(renderProduits,   params));
   route('/stock',        params => setPage(renderStock,      params));
+  route('/menu',         params => setPage(renderMenu,       params));
   route('/parametres',   params => setPage(renderParametres, params));
 
   // 5. Charge les données depuis localStorage
