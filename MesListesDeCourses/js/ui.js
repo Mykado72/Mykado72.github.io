@@ -6,7 +6,11 @@ export function h(tag, attrs = {}, ...children) {
   for (const [k, v] of Object.entries(attrs)) {
     if (k === 'class') el.className = v;
     else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
-    else el.setAttribute(k, v);
+    else if (k === 'disabled') { if (v) el.disabled = true; }   // boolean : ne set que si true
+    else if (k === 'checked')  { el.checked = !!v; }
+    else if (k === 'selected') { el.selected = !!v; }
+    else if (k === 'open')     { if (v) el.setAttribute('open', ''); }
+    else if (v !== false && v !== null && v !== undefined) el.setAttribute(k, v);
   }
   for (const child of children.flat()) {
     if (child == null) continue;
