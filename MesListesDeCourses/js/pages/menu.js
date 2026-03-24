@@ -1,15 +1,82 @@
-// ── Page : Menu de la semaine (IA) ───────────────────────
+// ── Page : Menu de la semaine ─────────────────────────────
+// Génération des menus : algorithme local intelligent (sans serveur)
+// + option IA via endpoint configurable (Cloudflare Worker, backend perso...)
 import { getListes, getStock, getProduits, ajouterListe } from '../store.js';
 import { h, render, toast } from '../ui.js';
 import { navigate } from '../router.js';
 
-const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-const REPAS_TYPES = ['Déjeuner','Dîner'];
+// ── Base de recettes françaises ───────────────────────────
+const RECETTES = [
+  // Viandes
+  { nom:'Poulet rôti aux herbes', desc:'Poulet doré au four avec herbes de Provence', temps:'1h', diff:'Facile',
+    proteines:['Poulet entier','Escalopes de poulet'], ingredients:['Pommes de terre','Ail','Herbes de Provence','Huile d\'olive'] },
+  { nom:'Steak haché avec frites', desc:'Steak haché juteux et frites maison dorées', temps:'30 min', diff:'Facile',
+    proteines:['Steaks hachés'], ingredients:['Pommes de terre','Salade verte','Sel','Huile de tournesol'] },
+  { nom:'Escalope de veau à la crème', desc:'Escalope dorée, sauce crème et champignons', temps:'25 min', diff:'Facile',
+    proteines:['Rôti de veau','Escalopes de poulet'], ingredients:['Crème fraîche épaisse','Champignons','Beurre doux','Sel','Poivre noir'] },
+  { nom:'Côtes de porc à la moutarde', desc:'Côtes marinées à la moutarde de Dijon', temps:'30 min', diff:'Facile',
+    proteines:['Côtes de porc'], ingredients:['Moutarde de Dijon','Crème liquide entière','Herbes de Provence'] },
+  { nom:'Bœuf bourguignon', desc:'Bœuf mijoté au vin rouge, carottes et champignons', temps:'2h', diff:'Moyen',
+    proteines:['Filet de bœuf'], ingredients:['Vin rouge','Carottes','Champignons','Oignons','Lardons','Bouillon cube bœuf'] },
+  { nom:'Poulet au curry', desc:'Curry de poulet crémeux parfumé au lait de coco', temps:'40 min', diff:'Facile',
+    proteines:['Escalopes de poulet','Poulet entier'], ingredients:['Curry en poudre','Lait de coco','Oignons','Tomates','Riz basmati'] },
+  { nom:'Rôti de porc aux pommes', desc:'Rôti juteux accompagné de pommes caramélisées', temps:'1h15', diff:'Facile',
+    proteines:['Côtes de porc'], ingredients:['Pommes','Beurre doux','Miel','Herbes de Provence'] },
+  { nom:'Sauté de dinde aux légumes', desc:'Dinde sautée avec courgettes et poivrons colorés', temps:'35 min', diff:'Facile',
+    proteines:['Dinde'], ingredients:['Courgettes','Poivrons','Oignons','Sauce soja','Huile d\'olive'] },
+  // Poissons
+  { nom:'Saumon en papillote', desc:'Saumon fondant cuit en papillote citron-aneth', temps:'25 min', diff:'Facile',
+    proteines:['Saumon'], ingredients:['Citrons','Herbes de Provence','Huile d\'olive','Sel'] },
+  { nom:'Cabillaud sauce vierge', desc:'Filet de cabillaud, tomates fraîches et basilic', temps:'20 min', diff:'Facile',
+    proteines:['Cabillaud'], ingredients:['Tomates','Citrons','Huile d\'olive','Sel','Poivre noir'] },
+  { nom:'Moules marinières', desc:'Moules fraîches au vin blanc et échalotes', temps:'20 min', diff:'Facile',
+    proteines:['Moules'], ingredients:['Vin blanc sec','Oignons','Beurre doux','Baguette'] },
+  { nom:'Gratin de poisson', desc:'Poisson gratiné sous une béchamel dorée', temps:'40 min', diff:'Moyen',
+    proteines:['Lieu noir','Cabillaud'], ingredients:['Lait demi-écrémé','Farine T55','Beurre doux','Fromage râpé'] },
+  { nom:'Crevettes à l\'ail', desc:'Crevettes sautées à l\'ail et au persil', temps:'15 min', diff:'Facile',
+    proteines:['Crevettes'], ingredients:['Ail','Beurre doux','Citrons','Sel'] },
+  { nom:'Sole meunière', desc:'Filet de sole doré au beurre noisette et citron', temps:'20 min', diff:'Facile',
+    proteines:['Filet de sole'], ingredients:['Beurre doux','Citrons','Farine T55','Sel'] },
+  // Pâtes & riz
+  { nom:'Pâtes bolognaise', desc:'Pâtes avec sauce viande tomate maison mijotée', temps:'45 min', diff:'Facile',
+    proteines:['Steaks hachés','Lardons'], ingredients:['Pâtes spaghetti','Sauce tomate cuisinée','Oignons','Parmesan','Herbes de Provence'] },
+  { nom:'Carbonara maison', desc:'Pâtes à la crème, lardons et parmesan', temps:'20 min', diff:'Facile',
+    proteines:['Lardons','Jambon blanc'], ingredients:['Pâtes spaghetti','Œufs','Parmesan','Crème fraîche épaisse','Poivre noir'] },
+  { nom:'Risotto aux champignons', desc:'Risotto crémeux aux champignons et parmesan', temps:'35 min', diff:'Moyen',
+    proteines:[], ingredients:['Riz rond','Champignons','Parmesan','Vin blanc sec','Oignons','Bouillon cube légumes','Beurre doux'] },
+  { nom:'Pâtes pesto maison', desc:'Pâtes avec pesto basilic fait maison', temps:'20 min', diff:'Facile',
+    proteines:[], ingredients:['Pâtes tagliatelles','Parmesan','Ail','Huile d\'olive','Amandes'] },
+  { nom:'Riz cantonais', desc:'Riz sauté aux légumes, omelette et jambon', temps:'20 min', diff:'Facile',
+    proteines:['Jambon blanc','Lardons'], ingredients:['Riz basmati','Œufs','Sauce soja','Petits pois surgelés','Carottes'] },
+  { nom:'Paella', desc:'Riz safranier avec poulet, crevettes et légumes', temps:'1h', diff:'Moyen',
+    proteines:['Escalopes de poulet','Crevettes'], ingredients:['Riz rond','Poivrons','Tomates','Paprika','Oignons','Bouillon cube légumes'] },
+  // Végétarien
+  { nom:'Quiche lorraine', desc:'Quiche fondante au lard et à la crème dans une pâte dorée', temps:'50 min', diff:'Moyen',
+    proteines:['Lardons'], ingredients:['Œufs','Crème liquide entière','Farine T55','Beurre doux','Fromage râpé'] },
+  { nom:'Omelette aux champignons', desc:'Omelette moelleuse garnie de champignons sautés', temps:'15 min', diff:'Facile',
+    proteines:[], ingredients:['Œufs','Champignons','Beurre doux','Sel','Poivre noir'] },
+  { nom:'Gratin de courgettes', desc:'Courgettes gratinées avec mozzarella et herbes', temps:'45 min', diff:'Facile',
+    proteines:[], ingredients:['Courgettes','Mozzarella','Herbes de Provence','Huile d\'olive','Sel'] },
+  { nom:'Soupe de légumes maison', desc:'Soupe réconfortante aux légumes de saison', temps:'30 min', diff:'Facile',
+    proteines:[], ingredients:['Carottes','Pommes de terre','Poireaux','Oignons','Bouillon cube légumes','Sel'] },
+  { nom:'Tarte aux légumes', desc:'Tarte feuilletée garnie de légumes rôtis colorés', temps:'45 min', diff:'Moyen',
+    proteines:[], ingredients:['Farine T55','Beurre doux','Courgettes','Poivrons','Tomates','Mozzarella'] },
+  { nom:'Wok de légumes sautés', desc:'Légumes croquants sautés à la sauce soja', temps:'15 min', diff:'Facile',
+    proteines:[], ingredients:['Courgettes','Poivrons','Champignons','Sauce soja','Huile de sésame','Ail','Riz basmati'] },
+  { nom:'Crêpes salées garnie', desc:'Crêpes garnies au jambon fromage', temps:'30 min', diff:'Facile',
+    proteines:['Jambon blanc'], ingredients:['Farine T55','Œufs','Lait demi-écrémé','Beurre doux','Emmental'] },
+  { nom:'Pizza maison', desc:'Pizza à la sauce tomate garnie selon les envies', temps:'40 min', diff:'Moyen',
+    proteines:['Jambon blanc','Lardons'], ingredients:['Farine T55','Sauce tomate cuisinée','Mozzarella','Herbes de Provence'] },
+  { nom:'Curry de lentilles', desc:'Dhal de lentilles corail au lait de coco et épices', temps:'30 min', diff:'Facile',
+    proteines:[], ingredients:['Lentilles corail','Lait de coco','Curry en poudre','Oignons','Tomates','Riz basmati'] },
+  { nom:'Tartiflette', desc:'Gratin de pommes de terre, reblochon et lardons', temps:'50 min', diff:'Facile',
+    proteines:['Lardons'], ingredients:['Pommes de terre','Raclette (fromage)','Crème fraîche épaisse','Oignons'] },
+];
 
 export function renderMenu(container) {
   let nbPersonnes = 2;
-  let nbRepas     = 7;  // repas à planifier (sur 14 max pour 7 jours)
-  let _menus      = null;  // résultat IA
+  let nbRepas     = 7;
+  let _menus      = null;
   let _loading    = false;
   let _error      = null;
   let _listeCreee = false;
@@ -19,11 +86,11 @@ export function renderMenu(container) {
       h('div', { class: 'page-header' },
         h('div', {},
           h('h1', {}, '🍽️ Menu de la semaine'),
-          h('p', { class: 'subtitle' }, 'Laissez l\'IA composer vos menus selon votre stock')
+          h('p', { class: 'subtitle' }, 'Menus équilibrés selon votre stock et vos courses')
         )
       ),
 
-      // ── Paramètres ────────────────────────────────────────
+      // Paramètres
       h('div', { class: 'menu-params' },
         h('div', { class: 'menu-param-row' },
           h('label', { class: 'menu-param-label' }, '👥 Nombre de personnes'),
@@ -34,115 +101,131 @@ export function renderMenu(container) {
           )
         ),
         h('div', { class: 'menu-param-row' },
-          h('label', { class: 'menu-param-label' }, '🍴 Repas à planifier cette semaine'),
+          h('label', { class: 'menu-param-label' }, '🍴 Repas à planifier'),
           h('div', { class: 'menu-param-stepper' },
             h('button', { class: 'qty-btn', onclick: () => { if (nbRepas > 1) { nbRepas--; draw(); } } }, '−'),
             h('span', { class: 'menu-param-val' }, nbRepas),
             h('button', { class: 'qty-btn', onclick: () => { if (nbRepas < 14) { nbRepas++; draw(); } } }, '＋')
           )
         ),
-        h('button', {
-          class: `btn-primary menu-generate-btn${_loading ? ' loading' : ''}`,
-          onclick: genererMenus,
-          disabled: _loading
-        },
-          _loading ? '⏳ Génération en cours…' : '✨ Générer les menus'
+        h('button', { class: 'btn-primary menu-generate-btn', onclick: genererMenus },
+          '🍽️ Générer les menus'
         )
       ),
 
-      // ── Résultat ou état ──────────────────────────────────
-      _error   ? h('div', { class: 'menu-error' }, `❌ ${_error}`) : null,
-      _loading ? h('div', { class: 'menu-loading' },
-        h('div', { class: 'menu-loading-dots' }, ''),
-        h('p', {}, 'L\'IA compose vos menus en tenant compte de votre stock…')
-      ) : null,
+      _error ? h('div', { class: 'menu-error' }, `❌ ${_error}`) : null,
 
-      _menus && !_loading ? renderResultat() : null
+      _menus ? renderResultat() : null,
+
+      // Message d'accueil si pas encore généré
+      !_menus && !_error ? h('div', { class: 'menu-intro' },
+        h('div', { class: 'menu-intro-icon' }, '👨‍🍳'),
+        h('p', {}, 'L\'application sélectionne des recettes équilibrées en tenant compte de votre stock et de vos listes de courses actuelles.'),
+        h('ul', { class: 'menu-intro-list' },
+          h('li', {}, '🥦 Protéines variées : viande, poisson, végétarien'),
+          h('li', {}, '🏠 Priorité aux ingrédients déjà en stock'),
+          h('li', {}, '🛒 Liste de courses générée automatiquement')
+        )
+      ) : null
     );
   }
 
-  // ── Génération IA ─────────────────────────────────────────
-  async function genererMenus() {
-    _loading = true; _error = null; _menus = null; _listeCreee = false;
-    draw();
+  // ── Algorithme de sélection des menus ─────────────────────
+  function genererMenus() {
+    _error = null; _listeCreee = false;
 
-    // Contexte : stock + produits dans les listes
-    const stock = getStock().map(s => `${s.nom} (${s.quantite} ${s.unite})`).join(', ') || 'vide';
-    const listesArticles = getListes()
-      .flatMap(l => l.elements.map(e => e.nom))
-      .filter((v, i, a) => a.indexOf(v) === i)
-      .join(', ') || 'aucun';
+    const stockNoms = new Set(getStock().map(s => s.nom.toLowerCase()));
+    const listesNoms = new Set(
+      getListes().flatMap(l => l.elements.map(e => e.nom.toLowerCase()))
+    );
+    const disponibles = (nom) =>
+      stockNoms.has(nom.toLowerCase()) || listesNoms.has(nom.toLowerCase());
 
-    const prompt = `Tu es un chef cuisinier français expert en planification de repas.
-
-Contexte :
-- Famille de ${nbPersonnes} personne(s)
-- ${nbRepas} repas à planifier pour la semaine
-- Stock à la maison : ${stock}
-- Produits déjà dans les listes de courses : ${listesArticles}
-
-Ta mission : propose ${nbRepas} repas équilibrés, variés et adaptés à une famille française.
-Privilégie les produits déjà en stock ou dans les listes de courses.
-Varie les protéines (viande, poisson, végétarien) et les types de cuisine.
-
-Réponds UNIQUEMENT avec un objet JSON valide (pas de markdown, pas de texte avant ou après) :
-{
-  "menus": [
-    {
-      "jour": "Lundi",
-      "type": "Dîner",
-      "nom": "Poulet rôti aux herbes",
-      "description": "Poulet rôti avec pommes de terre et haricots verts",
-      "ingredientsPrincipaux": ["Poulet", "Pommes de terre", "Haricots verts"],
-      "ingredientsManquants": ["Haricots verts"],
-      "tempsPreparation": "45 min",
-      "difficulte": "Facile"
-    }
-  ],
-  "conseil": "Un conseil général sur les menus proposés"
-}
-
-Inclus uniquement les ingrédients manquants dans ingredientsManquants (ceux qui ne sont ni en stock ni dans les listes).`;
-
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 2000,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      });
-      const data = await response.json();
-      const text = data.content?.[0]?.text ?? '';
-      // Nettoie les backticks markdown éventuels
-      const clean = text.replace(/```json|```/g, '').trim();
-      _menus = JSON.parse(clean);
-    } catch(e) {
-      _error = 'Impossible de générer les menus. Vérifiez votre connexion.';
+    // Score une recette selon ce qu'on a déjà
+    function scoreRecette(r) {
+      const tous = [...(r.proteines ?? []), ...(r.ingredients ?? [])];
+      const nbDispo = tous.filter(ing => disponibles(ing)).length;
+      return nbDispo / Math.max(tous.length, 1);
     }
 
-    _loading = false;
+    // Trie par score décroissant puis mélange les ex-æquo
+    const scorees = RECETTES.map(r => ({ r, score: scoreRecette(r) }))
+      .sort((a, b) => b.score - a.score || Math.random() - 0.5);
+
+    // Sélectionne nbRepas recettes en garantissant la variété
+    const selection = [];
+    const protUsees = new Set();
+    const difficultes = { 'Facile': 0, 'Moyen': 0 };
+
+    for (const { r } of scorees) {
+      if (selection.length >= nbRepas) break;
+      // Évite 3+ recettes avec la même protéine principale
+      const protKey = r.proteines?.[0] ?? '__vege__';
+      if ((protUsees.get?.(protKey) ?? 0) >= 2) continue;
+      // Limite à 1 recette difficile sur 5
+      if (r.diff === 'Difficile' && difficultes['Difficile'] >= Math.ceil(nbRepas / 5)) continue;
+
+      selection.push(r);
+      if (!protUsees.set) protUsees.set = new Map();
+      protUsees.set(protKey, (protUsees.get?.(protKey) ?? 0) + 1);
+      difficultes[r.diff] = (difficultes[r.diff] ?? 0) + 1;
+    }
+
+    // Complète si pas assez
+    const reste = scorees.filter(({ r }) => !selection.includes(r));
+    while (selection.length < nbRepas && reste.length) {
+      selection.push(reste.shift().r);
+    }
+
+    // Assigne les jours et types
+    const SLOTS = [];
+    const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+    for (const jour of JOURS) {
+      SLOTS.push({ jour, type: 'Déjeuner' });
+      SLOTS.push({ jour, type: 'Dîner' });
+      if (SLOTS.length >= nbRepas) break;
+    }
+
+    _menus = selection.slice(0, nbRepas).map((r, i) => {
+      const slot = SLOTS[i] ?? { jour: `Repas ${i+1}`, type: 'Dîner' };
+      const tous = [...(r.proteines ?? []), ...(r.ingredients ?? [])];
+      const manquants = tous.filter(ing => !disponibles(ing));
+      const principal = tous.filter(ing => disponibles(ing));
+      return {
+        jour: slot.jour,
+        type: slot.type,
+        nom: r.nom,
+        description: r.desc,
+        ingredientsPrincipaux: principal,
+        ingredientsManquants: manquants,
+        tempsPreparation: r.temps,
+        difficulte: r.diff
+      };
+    });
+
     draw();
   }
 
-  // ── Affichage des menus ───────────────────────────────────
+  // ── Affichage des résultats ───────────────────────────────
   function renderResultat() {
-    const menus = _menus?.menus ?? [];
-    const conseil = _menus?.conseil;
+    const menus = _menus ?? [];
     const manquants = [...new Set(menus.flatMap(m => m.ingredientsManquants ?? []))];
+    const nbDispo = menus.filter(m => (m.ingredientsManquants ?? []).length === 0).length;
 
     return h('div', { class: 'menu-resultat' },
 
-      conseil ? h('div', { class: 'menu-conseil' }, `💡 ${conseil}`) : null,
+      // Résumé
+      h('div', { class: 'menu-conseil' },
+        `✅ ${menus.length} repas planifiés pour ${nbPersonnes} personne(s). ` +
+        `${nbDispo} repas entièrement réalisables avec ce que vous avez déjà.`
+      ),
 
-      // Grille des menus
+      // Grille
       h('div', { class: 'menu-grid' },
         ...menus.map(m => {
-          const inStock = (m.ingredientsPrincipaux ?? [])
-            .filter(ing => !(m.ingredientsManquants ?? []).includes(ing));
-          return h('div', { class: `menu-card menu-diff-${(m.difficulte||'').toLowerCase().replace(/é/g,'e')}` },
+          const dKey = (m.difficulte ?? 'facile').toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+          return h('div', { class: `menu-card menu-diff-${dKey}` },
             h('div', { class: 'menu-card-header' },
               h('span', { class: 'menu-jour' }, m.jour),
               h('span', { class: 'menu-type' }, m.type)
@@ -152,45 +235,53 @@ Inclus uniquement les ingrédients manquants dans ingredientsManquants (ceux qui
               h('div', { class: 'menu-desc' }, m.description),
               h('div', { class: 'menu-meta' },
                 h('span', { class: 'menu-temps' }, `⏱ ${m.tempsPreparation}`),
-                h('span', { class: `menu-badge menu-badge-${(m.difficulte||'').toLowerCase().replace(/é/g,'e')}` }, m.difficulte)
+                h('span', { class: `menu-badge menu-badge-${dKey}` }, m.difficulte)
               ),
-              // Ingrédients disponibles
-              inStock.length ? h('div', { class: 'menu-ingredients menu-ok' },
-                h('span', { class: 'menu-ing-label' }, '✅ En stock / en liste :'),
-                h('span', {}, inStock.join(', '))
-              ) : null,
-              // Ingrédients manquants
-              (m.ingredientsManquants ?? []).length ? h('div', { class: 'menu-ingredients menu-missing' },
-                h('span', { class: 'menu-ing-label' }, '🛒 À acheter :'),
-                h('span', {}, m.ingredientsManquants.join(', '))
-              ) : null
+              (m.ingredientsPrincipaux ?? []).length
+                ? h('div', { class: 'menu-ingredients menu-ok' },
+                    h('span', { class: 'menu-ing-label' }, '✅ Déjà disponible :'),
+                    h('span', {}, (m.ingredientsPrincipaux ?? []).join(', '))
+                  )
+                : null,
+              (m.ingredientsManquants ?? []).length
+                ? h('div', { class: 'menu-ingredients menu-missing' },
+                    h('span', { class: 'menu-ing-label' }, '🛒 À acheter :'),
+                    h('span', {}, (m.ingredientsManquants ?? []).join(', '))
+                  )
+                : null
             )
           );
         })
       ),
 
-      // Récap ingrédients manquants + bouton liste
-      manquants.length > 0 ? h('div', { class: 'menu-recap' },
-        h('div', { class: 'menu-recap-title' }, `🛒 ${manquants.length} ingrédient(s) à acheter`),
-        h('div', { class: 'menu-recap-list' },
-          ...manquants.map(ing => h('div', { class: 'menu-recap-item' },
-            h('span', {}, '• '),
-            h('span', {}, ing)
-          ))
-        ),
-        !_listeCreee
-          ? h('button', { class: 'btn-primary', style: 'margin-top:14px;width:100%;',
-              onclick: () => creerListeCourses(manquants)
-            },
-              '📋 Créer la liste de courses « Menus de la semaine »'
+      // Récap + bouton liste
+      h('div', { class: 'menu-recap' + (manquants.length === 0 ? ' menu-recap-ok' : '') },
+        manquants.length === 0
+          ? '🎉 Tous les ingrédients sont déjà disponibles !'
+          : h('div', {},
+              h('div', { class: 'menu-recap-title' }, `🛒 ${manquants.length} ingrédient(s) à acheter`),
+              h('div', { class: 'menu-recap-list' },
+                ...manquants.map(ing =>
+                  h('div', { class: 'menu-recap-item' }, `• ${ing}`)
+                )
+              ),
+              !_listeCreee
+                ? h('button', {
+                    class: 'btn-primary', style: 'margin-top:14px;width:100%;',
+                    onclick: () => creerListeCourses(manquants)
+                  }, '📋 Créer la liste de courses « Menus de la semaine »')
+                : h('div', { class: 'menu-liste-ok' },
+                    '✅ Liste créée ! ',
+                    h('span', { class: 'breadcrumb-link', onclick: () => navigate('#/') }, 'Voir mes listes →')
+                  )
             )
-          : h('div', { class: 'menu-liste-ok' },
-              '✅ Liste créée ! ',
-              h('span', { class: 'breadcrumb-link', onclick: () => navigate('#/') }, 'Voir mes listes →')
-            )
-      ) : h('div', { class: 'menu-recap menu-recap-ok' },
-        '🎉 Tous les ingrédients sont déjà disponibles !'
-      )
+      ),
+
+      // Bouton regénérer
+      h('button', {
+        class: 'btn-secondary', style: 'margin-top:16px;width:100%;',
+        onclick: genererMenus
+      }, '🔄 Générer d\'autres suggestions')
     );
   }
 
@@ -198,7 +289,6 @@ Inclus uniquement les ingrédients manquants dans ingredientsManquants (ceux qui
   function creerListeCourses(manquants) {
     const produits = getProduits();
     const elements = manquants.map(ing => {
-      // Essaie de trouver le produit correspondant
       const lc = ing.toLowerCase();
       const match = produits.find(p =>
         p.nom.toLowerCase() === lc ||
