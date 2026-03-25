@@ -1,5 +1,6 @@
 // ── Page : Menu de la semaine ─────────────────────────────
 import { getListes, getStock, getProduits, ajouterListe } from '../store.js';
+import { recetteCompatible, getResumeRestrictions, getIngredientsInterdits } from '../restrictions.js';
 import { h, render, toast } from '../ui.js';
 import { navigate } from '../router.js';
 
@@ -129,6 +130,7 @@ function selectionnerRecettes(nbRepas, exclure = []) {
 
   const candidates = RECETTES
     .filter(r => !nomsExclus.has(r.nom.toLowerCase()))
+    .filter(r => recetteCompatible(r))  // exclut les recettes incompatibles avec les restrictions
     .map(r => {
       const tous = [...r.proteines, ...r.ingredients];
       return { r, score: tous.filter(i => dispo(i)).length / Math.max(tous.length, 1) };
@@ -177,10 +179,12 @@ export function renderMenu(container) {
     showConfig: false
   };
 
-  let _loading    = false;
-  let _error      = null;
-  let _cfgProvider = state.cfgProvider ?? 'claude';
-  let _cfgKey      = '';
+  let _loading         = false;
+  let _error           = null;
+  let _showPrompt      = false;   // afficher le prompt pour copier-coller
+  let _promptTexte     = '';      // texte du prompt
+  let _cfgProvider     = state.cfgProvider ?? 'claude';
+  let _cfgKey          = '';
 
   const SLOTS = () => {
     const slots = [];
@@ -237,14 +241,18 @@ export function renderMenu(container) {
         h('button', {
           class: 'btn-primary menu-generate-btn',
           onclick: () => { state.menus = []; state.listeCreee = false; save(); apiConfig ? genererMenusIA() : genererMenusLocal(); }
-        }, apiConfig ? '🤖 Générer avec l\'IA' : '🍽️ Générer les menus')
+        }, apiConfig ? '🤖 Générer avec l\'IA' : '🍽️ Générer les menus'),
+        apiConfig ? btnVoirPrompt() : null
       ),
 
-      _error ? h('div', { class: 'menu-error' }, `❌ ${_error}`) : null,
+      _error ? h('div', { class: 'menu-error' }, _error) : null,
       _loading ? h('div', { class: 'menu-loading' },
         h('div', { class: 'menu-loading-icon' }, '⏳'),
-        h('p', {}, "Sélection en cours…")
+        h('p', {}, "Génération en cours…")
       ) : null,
+
+      // Bloc prompt : visible en cas d'erreur IA ou sur demande
+      !_loading && (_showPrompt || false) ? renderBlcPrompt() : null,
 
       // Menus
       state.menus.length > 0 && !_loading ? renderMenus() : null,
@@ -372,40 +380,66 @@ export function renderMenu(container) {
     draw();
   }
 
+  // ── Construit le prompt ──────────────────────────────────
+  function construirePrompt() {
+    const stock  = getStock().map(s => `${s.nom} (${s.quantite} ${s.unite})`).join(', ') || 'vide';
+    const listes = getListes().flatMap(l => l.elements.map(e => e.nom))
+      .filter((v,i,a) => a.indexOf(v)===i).join(', ') || 'aucun';
+    const restrictions = getResumeRestrictions();
+    const ligneRestrictions = restrictions ? `\nRESTRICTIONS ABSOLUES À RESPECTER : ${restrictions}. N'utilise JAMAIS ces ingrédients.` : '';
+    return `Tu es un chef cuisinier français. Propose exactement ${state.nbRepas} repas variés et équilibrés pour ${state.nbPersonnes} personne(s).
+Stock disponible à la maison : ${stock}.
+Produits déjà dans les listes de courses : ${listes}.${ligneRestrictions}
+Instructions : Privilégie les produits disponibles. Varie les protéines (viande, poisson, végétarien). Répartis les repas sur la semaine.
+Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans texte avant ou après :
+{"menus":[{"slot":"Lundi – Déjeuner","nom":"Nom du plat","description":"Description courte","ingredientsPrincipaux":["Ingrédient 1","Ingrédient 2"],"ingredientsManquants":["Ingrédient manquant"],"tempsPreparation":"30 min","difficulte":"Facile","valide":false}]}
+Les valeurs possibles pour difficulte sont : Facile, Moyen, Difficile.
+Les valeurs possibles pour slot sont : Lundi – Déjeuner, Lundi – Dîner, Mardi – Déjeuner, Mardi – Dîner, Mercredi – Déjeuner, Mercredi – Dîner, Jeudi – Déjeuner, Jeudi – Dîner, Vendredi – Déjeuner, Vendredi – Dîner, Samedi – Déjeuner, Samedi – Dîner, Dimanche – Déjeuner, Dimanche – Dîner.`;
+  }
+
+  // ── Traite une réponse JSON (IA ou collée manuellement) ──
+  function traiterReponseIA(text) {
+    const clean = text.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim();
+    const data  = JSON.parse(clean);
+    const menus = Array.isArray(data) ? data : (data.menus ?? []);
+    if (!menus.length) throw new Error('Aucun menu dans la réponse');
+    state.menus = menus.map((m, i) => ({
+      ...m, slot: m.slot ?? SLOTS()[i] ?? `Repas ${i+1}`, valide: false
+    }));
+    state.listeCreee = false;
+    save();
+  }
+
   // ── Génération IA ─────────────────────────────────────────
   async function genererMenusIA() {
     const config = getApiConfig();
     if (!config) { genererMenusLocal(); return; }
-    _loading = true; _error = null;
+
+    const prompt = construirePrompt();
+    _promptTexte = prompt;
+    _loading = true; _error = null; _showPrompt = false;
     draw();
 
-    const stock  = getStock().map(s => `${s.nom} (${s.quantite} ${s.unite})`).join(', ') || 'vide';
-    const listes = getListes().flatMap(l => l.elements.map(e => e.nom))
-      .filter((v,i,a) => a.indexOf(v)===i).join(', ') || 'aucun';
-
-    const prompt = `Chef cuisinier français. Propose exactement ${state.nbRepas} repas pour ${state.nbPersonnes} personne(s).
-Stock : ${stock}. Listes de courses : ${listes}.
-Privilégie les produits disponibles. Varie viande/poisson/végétarien.
-JSON UNIQUEMENT (sans markdown) :
-{"menus":[{"slot":"Lundi – Dîner","nom":"...","description":"...","ingredientsPrincipaux":["..."],"ingredientsManquants":["..."],"tempsPreparation":"...","difficulte":"Facile","valide":false}]}`;
-
     try {
-      const text  = await appelIA(prompt, config);
-      const clean = text.replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'').trim();
-      const data  = JSON.parse(clean);
-      state.menus = (Array.isArray(data) ? data : data.menus ?? []).map((m, i) => ({
-        ...m, slot: m.slot ?? SLOTS()[i] ?? `Repas ${i+1}`, valide: false
-      }));
+      const text = await appelIA(prompt, config);
+      traiterReponseIA(text);
     } catch(e) {
-      _error = e.message.includes('401') ? 'Clé API invalide.'
-             : e.message.includes('429') ? 'Quota dépassé. Génération locale utilisée.'
-             : `Erreur IA : ${e.message}`;
-      genererMenusLocal(); return;
-    } finally {
+      console.error('Erreur IA:', e);
       _loading = false;
+      _showPrompt = true;  // affiche le prompt pour copier-coller manuellement
+      if (e.message.includes('401') || e.message.includes('403')) {
+        _error = '❌ Clé API invalide ou non autorisée. Vérifiez votre configuration.';
+      } else if (e.message.includes('429')) {
+        _error = '⚠️ Quota API dépassé. Réessayez plus tard.';
+      } else if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('CORS')) {
+        _error = "⚠️ Impossible de contacter l'API (CORS ou réseau). Utilisez le prompt ci-dessous pour copier-coller la réponse.";
+      } else {
+        _error = `⚠️ ${e.message}. Utilisez le prompt ci-dessous pour copier-coller manuellement.`;
+      }
+      draw();
+      return;
     }
-    state.listeCreee = false;
-    save();
+    _loading = false;
     draw();
   }
 
@@ -454,6 +488,56 @@ JSON UNIQUEMENT (sans markdown) :
         }}, '💾 Enregistrer')
       )
     );
+  }
+
+  // ── Bloc prompt + réponse manuelle ───────────────────────
+  function renderBlcPrompt() {
+    // Zone de texte pour coller la réponse JSON
+    const repTxt = h('textarea', {
+      class: 'menu-response-input',
+      placeholder: "Collez ici la réponse JSON de l'IA…",
+      rows: '6'
+    });
+
+    return h('div', { class: 'menu-prompt-panel' },
+      h('div', { class: 'menu-prompt-title' }, '📋 Prompt à copier-coller'),
+      h('p', { class: 'menu-prompt-desc' },
+        'Copiez ce prompt, collez-le dans Claude.ai, ChatGPT ou Gemini, puis collez la réponse JSON dans le champ ci-dessous.'
+      ),
+      // Zone prompt
+      h('div', { class: 'menu-prompt-box' },
+        h('pre', { class: 'menu-prompt-text' }, _promptTexte),
+        h('button', { class: 'menu-prompt-copy', onclick: () => {
+          navigator.clipboard.writeText(_promptTexte).then(() => toast('✅ Prompt copié !', 'ok'));
+        }}, '📋 Copier le prompt')
+      ),
+      // Zone réponse
+      h('div', { class: 'menu-prompt-section-title' }, '⬇️ Collez la réponse JSON ici :'),
+      repTxt,
+      h('div', { class: 'menu-config-actions' },
+        h('button', { class: 'btn-secondary', onclick: () => {
+          _showPrompt = false; draw();
+        }}, 'Fermer'),
+        h('button', { class: 'btn-primary', onclick: () => {
+          try {
+            traiterReponseIA(repTxt.value);
+            _showPrompt = false; _error = null;
+            draw();
+            toast('✅ Menus importés !', 'ok');
+          } catch(e) {
+            toast('❌ JSON invalide : ' + e.message, 'error');
+          }
+        }}, '✅ Importer la réponse')
+      )
+    );
+  }
+
+  // ── Bouton pour afficher le prompt manuellement ───────────
+  function btnVoirPrompt() {
+    return h('button', {
+      class: 'btn-secondary', style: 'margin-top:8px;width:100%;font-size:.85rem;',
+      onclick: () => { _promptTexte = construirePrompt(); _showPrompt = true; draw(); }
+    }, '📋 Voir / copier le prompt pour une IA externe');
   }
 
   // ── Intro ─────────────────────────────────────────────────
