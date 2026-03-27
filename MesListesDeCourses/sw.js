@@ -1,5 +1,5 @@
 // Service Worker — cache offline
-const CACHE = 'mldc-v1.4.0';
+const CACHE = 'mldc-v1.5.0';
 const ASSETS = [
   './',
   './index.html',
