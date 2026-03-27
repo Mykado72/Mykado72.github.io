@@ -1,9 +1,10 @@
 // ── Page : Menu de la semaine ─────────────────────────────
 import { getListes, getStock, getProduits, ajouterListe } from '../store.js';
+import { recetteCompatible, getResumeRestrictions, getIngredientsInterdits } from '../restrictions.js';
 import { h, render, toast } from '../ui.js';
 import { navigate } from '../router.js';
 
-// ── Base de recettes françaises ───────────────────────────
+// ── Base de recettes ──────────────────────────────────────
 const RECETTES = [
   { nom:'Poulet rôti aux herbes', desc:'Poulet doré au four avec herbes de Provence', temps:'1h', diff:'Facile',
     proteines:['Poulet entier','Escalopes de poulet'], ingredients:['Pommes de terre','Ail','Herbes de Provence','Huile d\'olive'] },
@@ -67,9 +68,16 @@ const RECETTES = [
     proteines:['Côtes de porc'], ingredients:['Moutarde de Dijon','Crème liquide entière','Herbes de Provence'] },
 ];
 
-// ── Gestion des clés API ──────────────────────────────────
+// ── Persistance ───────────────────────────────────────────
+const LS_MENUS  = 'mldc-menus-semaine';
 const LS_API_KEY = 'mldc-api-config';
 
+function sauvegarderMenus(state) {
+  localStorage.setItem(LS_MENUS, JSON.stringify(state));
+}
+function chargerMenus() {
+  try { return JSON.parse(localStorage.getItem(LS_MENUS) ?? 'null'); } catch { return null; }
+}
 function getApiConfig() {
   try { return JSON.parse(localStorage.getItem(LS_API_KEY) ?? 'null'); } catch { return null; }
 }
@@ -77,260 +85,329 @@ function saveApiConfig(cfg) {
   localStorage.setItem(LS_API_KEY, JSON.stringify(cfg));
 }
 
-// ── Appel IA selon le provider ────────────────────────────
+// ── Appel IA ──────────────────────────────────────────────
 async function appelIA(prompt, config) {
   if (config.provider === 'claude') {
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': config.key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      headers: { 'Content-Type': 'application/json', 'x-api-key': config.key,
+        'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-opus-4-6', max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }] })
     });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message ?? `HTTP ${resp.status}`);
-    }
-    const data = await resp.json();
-    return data.content?.[0]?.text ?? '';
+    if (!resp.ok) throw new Error((await resp.json().catch(()=>({}))).error?.message ?? `HTTP ${resp.status}`);
+    return (await resp.json()).content?.[0]?.text ?? '';
   }
-
   if (config.provider === 'openai') {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.key}` },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 2000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }] })
     });
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message ?? `HTTP ${resp.status}`);
-    }
-    const data = await resp.json();
-    return data.choices?.[0]?.message?.content ?? '';
+    if (!resp.ok) throw new Error((await resp.json().catch(()=>({}))).error?.message ?? `HTTP ${resp.status}`);
+    return (await resp.json()).choices?.[0]?.message?.content ?? '';
   }
-
   if (config.provider === 'gemini') {
     const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${config.key}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-      }
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${config.key}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
     );
-    if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err?.error?.message ?? `HTTP ${resp.status}`);
-    }
-    const data = await resp.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    if (!resp.ok) throw new Error((await resp.json().catch(()=>({}))).error?.message ?? `HTTP ${resp.status}`);
+    return (await resp.json()).candidates?.[0]?.content?.parts?.[0]?.text ?? '';
   }
-
   throw new Error('Provider inconnu');
 }
 
-// ── Page principale ───────────────────────────────────────
-export function renderMenu(container) {
-  let nbPersonnes  = 2;
-  let nbRepas      = 7;
-  let _menus       = null;
-  let _loading     = false;
-  let _error       = null;
-  let _listeCreee  = false;
-  let _showConfig  = false;
+// ── Algo local de sélection ───────────────────────────────
+function selectionnerRecettes(nbRepas, exclure = []) {
+  const stockNoms  = new Set(getStock().map(s => s.nom.toLowerCase()));
+  const listesNoms = new Set(getListes().flatMap(l => l.elements.map(e => e.nom.toLowerCase())));
+  const dispo = nom => stockNoms.has(nom.toLowerCase()) || listesNoms.has(nom.toLowerCase());
 
-  // Config IA en cours d'édition
-  let _cfgProvider = 'claude';
-  let _cfgKey      = '';
+  const nomsExclus = new Set(exclure.map(n => n.toLowerCase()));
+
+  const candidates = RECETTES
+    .filter(r => !nomsExclus.has(r.nom.toLowerCase()))
+    .filter(r => recetteCompatible(r))  // exclut les recettes incompatibles avec les restrictions
+    .map(r => {
+      const tous = [...r.proteines, ...r.ingredients];
+      return { r, score: tous.filter(i => dispo(i)).length / Math.max(tous.length, 1) };
+    })
+    .sort((a, b) => b.score - a.score || Math.random() - 0.5);
+
+  const selection = [];
+  const protCount = new Map();
+  for (const { r } of candidates) {
+    if (selection.length >= nbRepas) break;
+    const protKey = r.proteines[0] ?? '__vege__';
+    if ((protCount.get(protKey) ?? 0) >= 2) continue;
+    selection.push(r);
+    protCount.set(protKey, (protCount.get(protKey) ?? 0) + 1);
+  }
+  // Complète si besoin
+  for (const { r } of candidates) {
+    if (selection.length >= nbRepas) break;
+    if (!selection.includes(r)) selection.push(r);
+  }
+  return selection.slice(0, nbRepas);
+}
+
+function recetteToMenu(r, slot, dispo) {
+  const tous = [...r.proteines, ...r.ingredients];
+  return {
+    slot,
+    nom: r.nom,
+    description: r.desc,
+    ingredientsPrincipaux: tous.filter(i => dispo(i)),
+    ingredientsManquants:  tous.filter(i => !dispo(i)),
+    tempsPreparation: r.temps,
+    difficulte: r.diff,
+    valide: false   // false = en attente, true = validé
+  };
+}
+
+// ── Page ──────────────────────────────────────────────────
+export function renderMenu(container) {
+  // Charge l'état persisté ou initialise
+  let state = chargerMenus() ?? {
+    nbPersonnes: 2,
+    nbRepas: 7,
+    menus: [],      // liste des menus avec leur statut
+    listeCreee: false,
+    showConfig: false
+  };
+
+  let _loading         = false;
+  let _error           = null;
+  let _showPrompt      = false;   // afficher le prompt pour copier-coller
+  let _promptTexte     = '';      // texte du prompt
+  let _cfgProvider     = state.cfgProvider ?? 'claude';
+  let _cfgKey          = '';
+
+  const SLOTS = () => {
+    const slots = [];
+    const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+    for (const jour of JOURS) {
+      slots.push(`${jour} – Déjeuner`, `${jour} – Dîner`);
+    }
+    return slots;
+  };
+
+  function save() { sauvegarderMenus(state); }
 
   function draw() {
     const apiConfig = getApiConfig();
+    const nbValides = state.menus.filter(m => m.valide).length;
+    const nbTotal   = state.menus.length;
 
     render(container,
+      // Header
       h('div', { class: 'page-header' },
         h('div', {},
           h('h1', {}, '🍽️ Menu de la semaine'),
-          h('p', { class: 'subtitle' }, 'Menus équilibrés selon votre stock et vos courses')
+          h('p', { class: 'subtitle' }, nbTotal > 0
+            ? `${nbValides} validé(s) sur ${nbTotal} — ${state.nbRepas} repas demandés`
+            : 'Menus équilibrés selon votre stock et vos courses')
         ),
         h('button', {
           class: `btn-secondary${apiConfig ? ' btn-ia-active' : ''}`,
-          title: apiConfig ? `IA configurée : ${apiConfig.provider}` : 'Configurer une IA',
-          onclick: () => { _showConfig = !_showConfig; draw(); }
-        }, apiConfig ? `🤖 ${PROVIDERS[apiConfig.provider]?.label ?? apiConfig.provider}` : '🔑 Configurer l\'IA')
+          onclick: () => { state.showConfig = !state.showConfig; draw(); }
+        }, apiConfig ? `🤖 ${PROVIDERS[apiConfig.provider]?.label?.split(' ')[0] ?? 'IA'}` : '🔑 IA')
       ),
 
-      // ── Panel config IA ───────────────────────────────────
-      _showConfig ? renderConfigIA(apiConfig) : null,
+      // Panel config IA (repliable)
+      state.showConfig ? renderConfigIA(apiConfig) : null,
 
-      // ── Paramètres ────────────────────────────────────────
+      // Paramètres + bouton générer
       h('div', { class: 'menu-params' },
         h('div', { class: 'menu-param-row' },
-          h('label', { class: 'menu-param-label' }, '👥 Nombre de personnes'),
+          h('label', { class: 'menu-param-label' }, '👥 Personnes'),
           h('div', { class: 'menu-param-stepper' },
-            h('button', { class: 'qty-btn', onclick: () => { if (nbPersonnes > 1) { nbPersonnes--; draw(); } } }, '−'),
-            h('span', { class: 'menu-param-val' }, nbPersonnes),
-            h('button', { class: 'qty-btn', onclick: () => { nbPersonnes++; draw(); } }, '＋')
+            h('button', { class: 'qty-btn', onclick: () => { if (state.nbPersonnes > 1) { state.nbPersonnes--; save(); draw(); } } }, '−'),
+            h('span', { class: 'menu-param-val' }, state.nbPersonnes),
+            h('button', { class: 'qty-btn', onclick: () => { state.nbPersonnes++; save(); draw(); } }, '＋')
           )
         ),
         h('div', { class: 'menu-param-row' },
           h('label', { class: 'menu-param-label' }, '🍴 Repas à planifier'),
           h('div', { class: 'menu-param-stepper' },
-            h('button', { class: 'qty-btn', onclick: () => { if (nbRepas > 1) { nbRepas--; draw(); } } }, '−'),
-            h('span', { class: 'menu-param-val' }, nbRepas),
-            h('button', { class: 'qty-btn', onclick: () => { if (nbRepas < 14) { nbRepas++; draw(); } } }, '＋')
+            h('button', { class: 'qty-btn', onclick: () => { if (state.nbRepas > 1) { state.nbRepas--; save(); draw(); } } }, '−'),
+            h('span', { class: 'menu-param-val' }, state.nbRepas),
+            h('button', { class: 'qty-btn', onclick: () => { if (state.nbRepas < 14) { state.nbRepas++; save(); draw(); } } }, '＋')
           )
         ),
         h('button', {
-          class: `btn-primary menu-generate-btn${_loading ? ' loading' : ''}`,
-          disabled: _loading,
-          onclick: () => {
-            if (getApiConfig()) genererMenusIA();
-            else genererMenusLocal();
-          }
-        }, _loading ? '⏳ Génération en cours…' : (apiConfig ? '🤖 Générer avec l\'IA' : '🍽️ Générer les menus'))
+          class: 'btn-primary menu-generate-btn',
+          onclick: () => { state.menus = []; state.listeCreee = false; save(); apiConfig ? genererMenusIA() : genererMenusLocal(); }
+        }, apiConfig ? '🤖 Générer avec l\'IA' : '🍽️ Générer les menus'),
+        apiConfig ? btnVoirPrompt() : null
       ),
 
-      _error ? h('div', { class: 'menu-error' }, `❌ ${_error}`) : null,
-
+      _error ? h('div', { class: 'menu-error' }, _error) : null,
       _loading ? h('div', { class: 'menu-loading' },
         h('div', { class: 'menu-loading-icon' }, '⏳'),
-        h('p', {}, apiConfig ? "L'IA compose vos menus…" : "Sélection des menus en cours…")
+        h('p', {}, "Génération en cours…")
       ) : null,
 
-      _menus && !_loading ? renderResultat() : null,
+      // Bloc prompt : visible en cas d'erreur IA ou sur demande
+      !_loading && (_showPrompt || false) ? renderBlcPrompt() : null,
 
-      !_menus && !_loading && !_error ? renderIntro(!!apiConfig) : null
+      // Menus
+      state.menus.length > 0 && !_loading ? renderMenus() : null,
+
+      // Intro si vide
+      !state.menus.length && !_loading ? renderIntro(!!apiConfig) : null
     );
   }
 
-  // ── Panel configuration IA ────────────────────────────────
-  const PROVIDERS = {
-    claude:  { label: 'Claude (Anthropic)', placeholder: 'sk-ant-api03-...' },
-    openai:  { label: 'ChatGPT (OpenAI)',    placeholder: 'sk-proj-...' },
-    gemini:  { label: 'Gemini (Google)',     placeholder: 'AIza...' },
-  };
+  // ── Grille des menus ──────────────────────────────────────
+  function renderMenus() {
+    const nbValides  = state.menus.filter(m => m.valide).length;
+    const manquants  = [...new Set(
+      state.menus.filter(m => m.valide).flatMap(m => m.ingredientsManquants ?? [])
+    )];
 
-  function renderConfigIA(current) {
-    if (current && !_cfgKey) { _cfgProvider = current.provider; _cfgKey = current.key; }
+    return h('div', { class: 'menu-resultat' },
 
-    const providerSel = h('select', { class: 'form-input' });
-    Object.entries(PROVIDERS).forEach(([key, val]) => {
-      const opt = h('option', { value: key }, val.label);
-      if (key === _cfgProvider) opt.selected = true;
-      providerSel.append(opt);
-    });
-    providerSel.addEventListener('change', e => { _cfgProvider = e.target.value; draw(); });
-
-    const keyInput = h('input', {
-      class: 'form-input',
-      type: 'password',
-      placeholder: PROVIDERS[_cfgProvider]?.placeholder ?? 'Clé API…',
-      value: _cfgKey
-    });
-    keyInput.addEventListener('input', e => _cfgKey = e.target.value.trim());
-
-    return h('div', { class: 'menu-config-panel' },
-      h('div', { class: 'menu-config-title' }, '🔑 Configuration de l\'IA'),
-      h('p', { class: 'menu-config-desc' },
-        'Votre clé API est stockée uniquement dans votre navigateur (localStorage). Elle n\'est jamais envoyée ailleurs que vers le service choisi.'
-      ),
-      h('div', { class: 'form-group' }, h('label', {}, 'Service IA'), providerSel),
-      h('div', { class: 'form-group' },
-        h('label', {}, 'Clé API'),
-        h('div', { class: 'menu-config-key-row' },
-          keyInput,
-          h('a', {
-            class: 'menu-config-link',
-            href: PROVIDERS[_cfgProvider] ? {
-              claude: 'https://console.anthropic.com/settings/keys',
-              openai: 'https://platform.openai.com/api-keys',
-              gemini: 'https://aistudio.google.com/app/apikey',
-            }[_cfgProvider] : '#',
-            target: '_blank'
-          }, '→ Obtenir une clé')
+      // Bandeau de progression
+      h('div', { class: 'menu-progression' },
+        h('div', { class: 'menu-progression-bar' },
+          h('div', { class: 'menu-progression-fill', style: `width:${Math.round(nbValides/state.nbRepas*100)}%` })
+        ),
+        h('div', { class: 'menu-progression-label' },
+          `${nbValides} / ${state.nbRepas} menus validés`,
+          nbValides === state.nbRepas
+            ? h('span', { class: 'menu-complet-badge' }, '✅ Semaine complète !')
+            : null
         )
       ),
-      h('div', { class: 'menu-config-actions' },
-        current ? h('button', { class: 'btn-danger-full', onclick: () => {
-          localStorage.removeItem(LS_API_KEY);
-          _cfgKey = ''; _showConfig = false; draw();
-          toast('Clé supprimée', 'ok');
-        }}, '🗑️ Supprimer la clé') : null,
-        h('button', { class: 'btn-secondary', onclick: () => { _showConfig = false; draw(); } }, 'Annuler'),
-        h('button', { class: 'btn-primary', onclick: () => {
-          if (!_cfgKey) { toast('Clé API vide', 'error'); return; }
-          saveApiConfig({ provider: _cfgProvider, key: _cfgKey });
-          _showConfig = false; draw();
-          toast('✅ Clé enregistrée !', 'ok');
-        }}, '💾 Enregistrer')
-      )
+
+      // Cartes
+      h('div', { class: 'menu-grid' }, ...state.menus.map((m, idx) => renderCarteMenu(m, idx))),
+
+      // Récap + liste si au moins 1 validé
+      nbValides > 0 ? h('div', { class: 'menu-recap' + (manquants.length === 0 ? ' menu-recap-ok' : '') },
+        manquants.length === 0
+          ? h('p', { style: 'font-weight:700;color:var(--primary);text-align:center;' },
+              '🎉 Tous les ingrédients sont déjà disponibles !')
+          : h('div', {},
+              h('div', { class: 'menu-recap-title' }, `🛒 ${manquants.length} ingrédient(s) à acheter pour les ${nbValides} repas validés`),
+              h('div', { class: 'menu-recap-list' }, ...manquants.map(ing =>
+                h('div', { class: 'menu-recap-item' }, `• ${ing}`)
+              )),
+              !state.listeCreee
+                ? h('button', { class: 'btn-primary', style: 'margin-top:14px;width:100%;',
+                    onclick: () => creerListeCourses(manquants)
+                  }, '📋 Créer la liste de courses « Menus de la semaine »')
+                : h('div', { class: 'menu-liste-ok' },
+                    '✅ Liste créée ! ',
+                    h('span', { class: 'breadcrumb-link', onclick: () => navigate('#/') }, 'Voir mes listes →')
+                  )
+            )
+      ) : null
     );
   }
 
-  // ── Génération locale (algo) ──────────────────────────────
-  function genererMenusLocal() {
-    _error = null; _listeCreee = false; _menus = null;
+  // ── Carte d'un menu ───────────────────────────────────────
+  function renderCarteMenu(m, idx) {
+    const dKey = (m.difficulte ?? 'facile').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const estValide = m.valide;
 
-    const stockNoms   = new Set(getStock().map(s => s.nom.toLowerCase()));
-    const listesNoms  = new Set(getListes().flatMap(l => l.elements.map(e => e.nom.toLowerCase())));
+    const card = h('div', { class: `menu-card menu-diff-${dKey}${estValide ? ' menu-card-valide' : ''}` },
+      // Header : slot + badge difficulté
+      h('div', { class: 'menu-card-header' },
+        h('span', { class: 'menu-slot' }, m.slot ?? `Repas ${idx+1}`),
+        h('span', { class: `menu-badge menu-badge-${dKey}` }, m.difficulte)
+      ),
+      // Corps
+      h('div', { class: 'menu-card-body' },
+        h('div', { class: 'menu-nom' }, m.nom),
+        h('div', { class: 'menu-desc' }, m.description),
+        h('div', { class: 'menu-temps' }, `⏱ ${m.tempsPreparation}`),
+        (m.ingredientsPrincipaux ?? []).length ? h('div', { class: 'menu-ingredients menu-ok' },
+          h('span', { class: 'menu-ing-label' }, '✅ Disponible :'),
+          h('span', {}, (m.ingredientsPrincipaux ?? []).join(', '))
+        ) : null,
+        (m.ingredientsManquants ?? []).length ? h('div', { class: 'menu-ingredients menu-missing' },
+          h('span', { class: 'menu-ing-label' }, '🛒 À acheter :'),
+          h('span', {}, (m.ingredientsManquants ?? []).join(', '))
+        ) : null
+      ),
+      // Actions : Valider / Remplacer
+      h('div', { class: 'menu-card-actions' },
+        estValide
+          ? h('button', { class: 'menu-btn-annuler', onclick: () => { m.valide = false; save(); draw(); } },
+              '↩ Retirer')
+          : h('button', { class: 'menu-btn-valider', onclick: () => { m.valide = true; save(); draw(); } },
+              '✅ Valider ce repas'),
+        h('button', { class: 'menu-btn-remplacer', onclick: () => remplacerMenu(idx) },
+          '🔄 Remplacer')
+      )
+    );
+    return card;
+  }
+
+  // ── Remplacer un menu ─────────────────────────────────────
+  function remplacerMenu(idx) {
+    const nomActuels = state.menus.map(m => m.nom);
+    const nouvelles = selectionnerRecettes(1, nomActuels);
+    if (!nouvelles.length) { toast('Plus de recettes disponibles !', 'error'); return; }
+
+    const stockNoms  = new Set(getStock().map(s => s.nom.toLowerCase()));
+    const listesNoms = new Set(getListes().flatMap(l => l.elements.map(e => e.nom.toLowerCase())));
     const dispo = nom => stockNoms.has(nom.toLowerCase()) || listesNoms.has(nom.toLowerCase());
 
-    const scorees = RECETTES
-      .map(r => {
-        const tous = [...r.proteines, ...r.ingredients];
-        const score = tous.filter(i => dispo(i)).length / Math.max(tous.length, 1);
-        return { r, score };
-      })
-      .sort((a, b) => b.score - a.score || Math.random() - 0.5);
-
-    // Sélection avec variété — utilise une vraie Map
-    const selection = [];
-    const protCount  = new Map();
-
-    for (const { r } of scorees) {
-      if (selection.length >= nbRepas) break;
-      const protKey = r.proteines[0] ?? '__vege__';
-      if ((protCount.get(protKey) ?? 0) >= 2) continue;
-      selection.push(r);
-      protCount.set(protKey, (protCount.get(protKey) ?? 0) + 1);
-    }
-    // Complète si nécessaire
-    for (const { r } of scorees) {
-      if (selection.length >= nbRepas) break;
-      if (!selection.includes(r)) selection.push(r);
-    }
-
-    const SLOTS = [];
-    const JOURS = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-    for (const jour of JOURS) {
-      SLOTS.push({ jour, type: 'Déjeuner' }, { jour, type: 'Dîner' });
-      if (SLOTS.length >= nbRepas * 2) break;
-    }
-
-    _menus = selection.slice(0, nbRepas).map((r, i) => {
-      const slot = SLOTS[i] ?? { jour: `Repas ${i+1}`, type: 'Dîner' };
-      const tous = [...r.proteines, ...r.ingredients];
-      return {
-        jour: slot.jour, type: slot.type,
-        nom: r.nom, description: r.desc,
-        ingredientsPrincipaux: tous.filter(i => dispo(i)),
-        ingredientsManquants:  tous.filter(i => !dispo(i)),
-        tempsPreparation: r.temps, difficulte: r.diff
-      };
-    });
-
+    state.menus[idx] = recetteToMenu(nouvelles[0], state.menus[idx].slot, dispo);
+    if (navigator.vibrate) navigator.vibrate(20);
+    save();
     draw();
+  }
+
+  // ── Génération locale ─────────────────────────────────────
+  function genererMenusLocal() {
+    _error = null;
+    const stockNoms  = new Set(getStock().map(s => s.nom.toLowerCase()));
+    const listesNoms = new Set(getListes().flatMap(l => l.elements.map(e => e.nom.toLowerCase())));
+    const dispo = nom => stockNoms.has(nom.toLowerCase()) || listesNoms.has(nom.toLowerCase());
+
+    const recettes = selectionnerRecettes(state.nbRepas, []);
+    const slots = SLOTS();
+    state.menus = recettes.map((r, i) => recetteToMenu(r, slots[i] ?? `Repas ${i+1}`, dispo));
+    state.listeCreee = false;
+    save();
+    draw();
+  }
+
+  // ── Construit le prompt ──────────────────────────────────
+  function construirePrompt() {
+    const stock  = getStock().map(s => `${s.nom} (${s.quantite} ${s.unite})`).join(', ') || 'vide';
+    const listes = getListes().flatMap(l => l.elements.map(e => e.nom))
+      .filter((v,i,a) => a.indexOf(v)===i).join(', ') || 'aucun';
+    const restrictions = getResumeRestrictions();
+    const ligneRestrictions = restrictions ? `\nRESTRICTIONS ABSOLUES À RESPECTER : ${restrictions}. N'utilise JAMAIS ces ingrédients.` : '';
+    return `Tu es un chef cuisinier français. Propose exactement ${state.nbRepas} repas variés et équilibrés pour ${state.nbPersonnes} personne(s).
+Stock disponible à la maison : ${stock}.
+Produits déjà dans les listes de courses : ${listes}.${ligneRestrictions}
+Instructions : Privilégie les produits disponibles. Varie les protéines (viande, poisson, végétarien). Répartis les repas sur la semaine.
+Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans texte avant ou après :
+{"menus":[{"slot":"Lundi – Déjeuner","nom":"Nom du plat","description":"Description courte","ingredientsPrincipaux":["Ingrédient 1","Ingrédient 2"],"ingredientsManquants":["Ingrédient manquant"],"tempsPreparation":"30 min","difficulte":"Facile","valide":false}]}
+Les valeurs possibles pour difficulte sont : Facile, Moyen, Difficile.
+Les valeurs possibles pour slot sont : Lundi – Déjeuner, Lundi – Dîner, Mardi – Déjeuner, Mardi – Dîner, Mercredi – Déjeuner, Mercredi – Dîner, Jeudi – Déjeuner, Jeudi – Dîner, Vendredi – Déjeuner, Vendredi – Dîner, Samedi – Déjeuner, Samedi – Dîner, Dimanche – Déjeuner, Dimanche – Dîner.`;
+  }
+
+  // ── Traite une réponse JSON (IA ou collée manuellement) ──
+  function traiterReponseIA(text) {
+    const clean = text.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim();
+    const data  = JSON.parse(clean);
+    const menus = Array.isArray(data) ? data : (data.menus ?? []);
+    if (!menus.length) throw new Error('Aucun menu dans la réponse');
+    state.menus = menus.map((m, i) => ({
+      ...m, slot: m.slot ?? SLOTS()[i] ?? `Repas ${i+1}`, valide: false
+    }));
+    state.listeCreee = false;
+    save();
   }
 
   // ── Génération IA ─────────────────────────────────────────
@@ -338,125 +415,167 @@ export function renderMenu(container) {
     const config = getApiConfig();
     if (!config) { genererMenusLocal(); return; }
 
-    _loading = true; _error = null; _menus = null; _listeCreee = false;
+    const prompt = construirePrompt();
+    _promptTexte = prompt;
+    _loading = true; _error = null; _showPrompt = false;
     draw();
-
-    const stock = getStock().map(s => `${s.nom} (${s.quantite} ${s.unite})`).join(', ') || 'vide';
-    const listes = getListes().flatMap(l => l.elements.map(e => e.nom))
-      .filter((v,i,a) => a.indexOf(v) === i).join(', ') || 'aucun';
-
-    const prompt = `Tu es un chef cuisinier français. Propose ${nbRepas} repas équilibrés pour ${nbPersonnes} personne(s).
-Stock disponible : ${stock}
-Produits dans les listes de courses : ${listes}
-Privilégie les produits disponibles. Varie viande/poisson/végétarien.
-Réponds UNIQUEMENT avec un JSON valide (sans markdown) :
-{"menus":[{"jour":"Lundi","type":"Dîner","nom":"Poulet rôti","description":"...","ingredientsPrincipaux":["Poulet","Pommes de terre"],"ingredientsManquants":["Pommes de terre"],"tempsPreparation":"45 min","difficulte":"Facile"}],"conseil":"..."}`;
 
     try {
       const text = await appelIA(prompt, config);
-      const clean = text.replace(/^```(?:json)?\n?/,'').replace(/\n?```$/,'').trim();
-      _menus = JSON.parse(clean).menus;
-      if (!Array.isArray(_menus)) throw new Error('Format inattendu');
+      traiterReponseIA(text);
     } catch(e) {
-      console.error(e);
-      _error = e.message.includes('401') ? 'Clé API invalide. Vérifiez votre configuration.'
-             : e.message.includes('429') ? 'Quota API dépassé. Réessayez plus tard.'
-             : `Erreur IA : ${e.message}. Génération locale utilisée à la place.`;
-      genererMenusLocal(); return;
-    } finally {
+      console.error('Erreur IA:', e);
       _loading = false;
+      _showPrompt = true;  // affiche le prompt pour copier-coller manuellement
+      if (e.message.includes('401') || e.message.includes('403')) {
+        _error = '❌ Clé API invalide ou non autorisée. Vérifiez votre configuration.';
+      } else if (e.message.includes('429')) {
+        _error = '⚠️ Quota API dépassé. Réessayez plus tard.';
+      } else if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('CORS')) {
+        _error = "⚠️ Impossible de contacter l'API (CORS ou réseau). Utilisez le prompt ci-dessous pour copier-coller la réponse.";
+      } else {
+        _error = `⚠️ ${e.message}. Utilisez le prompt ci-dessous pour copier-coller manuellement.`;
+      }
+      draw();
+      return;
     }
+    _loading = false;
     draw();
   }
 
-  // ── Affichage résultats ───────────────────────────────────
-  function renderResultat() {
-    const menus = _menus ?? [];
-    const manquants = [...new Set(menus.flatMap(m => m.ingredientsManquants ?? []))];
-    const conseil = _menus?.conseil;
+  // ── Config IA ─────────────────────────────────────────────
+  const PROVIDERS = {
+    claude: { label: 'Claude (Anthropic)', placeholder: 'sk-ant-api03-...' },
+    openai: { label: 'ChatGPT (OpenAI)',   placeholder: 'sk-proj-...' },
+    gemini: { label: 'Gemini (Google)',    placeholder: 'AIza...' },
+  };
 
-    return h('div', { class: 'menu-resultat' },
-      conseil ? h('div', { class: 'menu-conseil' }, `💡 ${conseil}`) : null,
-      h('div', { class: 'menu-conseil' },
-        `✅ ${menus.length} repas planifiés pour ${nbPersonnes} personne(s). ` +
-        `${menus.filter(m=>!(m.ingredientsManquants??[]).length).length} entièrement réalisables avec votre stock.`
+  function renderConfigIA(current) {
+    if (current && !_cfgKey) { _cfgProvider = current.provider; _cfgKey = current.key; }
+    const provSel = h('select', { class: 'form-input' });
+    Object.entries(PROVIDERS).forEach(([k, v]) => {
+      const opt = h('option', { value: k }, v.label);
+      if (k === _cfgProvider) opt.selected = true;
+      provSel.append(opt);
+    });
+    provSel.addEventListener('change', e => { _cfgProvider = e.target.value; draw(); });
+    const keyInput = h('input', { class: 'form-input', type: 'password',
+      placeholder: PROVIDERS[_cfgProvider]?.placeholder ?? '...', value: _cfgKey });
+    keyInput.addEventListener('input', e => _cfgKey = e.target.value.trim());
+    const LINKS = { claude:'https://console.anthropic.com/settings/keys',
+      openai:'https://platform.openai.com/api-keys', gemini:'https://aistudio.google.com/app/apikey' };
+    return h('div', { class: 'menu-config-panel' },
+      h('div', { class: 'menu-config-title' }, '🔑 Configuration IA'),
+      h('p', { class: 'menu-config-desc' }, 'Clé stockée uniquement dans votre navigateur, jamais transmise à d\'autres serveurs.'),
+      h('div', { class: 'form-group' }, h('label', {}, 'Service'), provSel),
+      h('div', { class: 'form-group' }, h('label', {}, 'Clé API'),
+        h('div', { class: 'menu-config-key-row' },
+          keyInput,
+          h('a', { class: 'menu-config-link', href: LINKS[_cfgProvider] ?? '#', target: '_blank' }, '→ Obtenir')
+        )
       ),
-      h('div', { class: 'menu-grid' },
-        ...menus.map(m => {
-          const dKey = (m.difficulte ?? 'facile').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-          return h('div', { class: `menu-card menu-diff-${dKey}` },
-            h('div', { class: 'menu-card-header' },
-              h('span', { class: 'menu-jour' }, m.jour),
-              h('span', { class: 'menu-type' }, m.type)
-            ),
-            h('div', { class: 'menu-card-body' },
-              h('div', { class: 'menu-nom' }, m.nom),
-              h('div', { class: 'menu-desc' }, m.description),
-              h('div', { class: 'menu-meta' },
-                h('span', { class: 'menu-temps' }, `⏱ ${m.tempsPreparation}`),
-                h('span', { class: `menu-badge menu-badge-${dKey}` }, m.difficulte)
-              ),
-              (m.ingredientsPrincipaux??[]).length ? h('div', { class: 'menu-ingredients menu-ok' },
-                h('span', { class: 'menu-ing-label' }, '✅ Déjà disponible :'),
-                h('span', {}, (m.ingredientsPrincipaux??[]).join(', '))
-              ) : null,
-              (m.ingredientsManquants??[]).length ? h('div', { class: 'menu-ingredients menu-missing' },
-                h('span', { class: 'menu-ing-label' }, '🛒 À acheter :'),
-                h('span', {}, (m.ingredientsManquants??[]).join(', '))
-              ) : null
-            )
-          );
-        })
-      ),
-      h('div', { class: 'menu-recap' + (manquants.length === 0 ? ' menu-recap-ok' : '') },
-        manquants.length === 0
-          ? '🎉 Tous les ingrédients sont déjà disponibles !'
-          : h('div', {},
-              h('div', { class: 'menu-recap-title' }, `🛒 ${manquants.length} ingrédient(s) à acheter`),
-              h('div', { class: 'menu-recap-list' }, ...manquants.map(ing => h('div', { class: 'menu-recap-item' }, `• ${ing}`))),
-              !_listeCreee
-                ? h('button', { class: 'btn-primary', style: 'margin-top:14px;width:100%;', onclick: () => creerListeCourses(manquants) },
-                    '📋 Créer la liste de courses « Menus de la semaine »')
-                : h('div', { class: 'menu-liste-ok' }, '✅ Liste créée ! ',
-                    h('span', { class: 'breadcrumb-link', onclick: () => navigate('#/') }, 'Voir mes listes →'))
-            )
-      ),
-      h('button', { class: 'btn-secondary', style: 'margin-top:16px;width:100%;',
-        onclick: () => { if (getApiConfig()) genererMenusIA(); else genererMenusLocal(); }
-      }, '🔄 Générer d\'autres suggestions')
-    );
-  }
-
-  function renderIntro(hasIA) {
-    return h('div', { class: 'menu-intro' },
-      h('div', { class: 'menu-intro-icon' }, '👨‍🍳'),
-      hasIA
-        ? h('p', {}, 'L\'IA va composer des menus personnalisés en tenant compte de votre stock et de vos courses.')
-        : h('p', {}, 'L\'application sélectionne 30 recettes françaises classiques en tenant compte de votre stock.'),
-      h('ul', { class: 'menu-intro-list' },
-        h('li', {}, '🥦 Protéines variées : viande, poisson, végétarien'),
-        h('li', {}, '🏠 Priorité aux ingrédients déjà en stock'),
-        h('li', {}, '🛒 Liste de courses générée automatiquement'),
-        !hasIA ? h('li', {}, '🔑 Configurez une IA (Claude/ChatGPT/Gemini) pour des menus sur-mesure') : null
+      h('div', { class: 'menu-config-actions' },
+        current ? h('button', { class: 'btn-danger-full', onclick: () => {
+          localStorage.removeItem(LS_API_KEY); _cfgKey = ''; state.showConfig = false; save(); draw();
+          toast('Clé supprimée', 'ok');
+        }}, '🗑️ Supprimer') : null,
+        h('button', { class: 'btn-secondary', onclick: () => { state.showConfig = false; draw(); } }, 'Annuler'),
+        h('button', { class: 'btn-primary', onclick: () => {
+          if (!_cfgKey) { toast('Clé vide', 'error'); return; }
+          saveApiConfig({ provider: _cfgProvider, key: _cfgKey });
+          state.showConfig = false; save(); draw();
+          toast('✅ Clé enregistrée !', 'ok');
+        }}, '💾 Enregistrer')
       )
     );
   }
 
+  // ── Bloc prompt + réponse manuelle ───────────────────────
+  function renderBlcPrompt() {
+    // Zone de texte pour coller la réponse JSON
+    const repTxt = h('textarea', {
+      class: 'menu-response-input',
+      placeholder: "Collez ici la réponse JSON de l'IA…",
+      rows: '6'
+    });
+
+    return h('div', { class: 'menu-prompt-panel' },
+      h('div', { class: 'menu-prompt-title' }, '📋 Prompt à copier-coller'),
+      h('p', { class: 'menu-prompt-desc' },
+        'Copiez ce prompt, collez-le dans Claude.ai, ChatGPT ou Gemini, puis collez la réponse JSON dans le champ ci-dessous.'
+      ),
+      // Zone prompt
+      h('div', { class: 'menu-prompt-box' },
+        h('pre', { class: 'menu-prompt-text' }, _promptTexte),
+        h('button', { class: 'menu-prompt-copy', onclick: () => {
+          navigator.clipboard.writeText(_promptTexte).then(() => toast('✅ Prompt copié !', 'ok'));
+        }}, '📋 Copier le prompt')
+      ),
+      // Zone réponse
+      h('div', { class: 'menu-prompt-section-title' }, '⬇️ Collez la réponse JSON ici :'),
+      repTxt,
+      h('div', { class: 'menu-config-actions' },
+        h('button', { class: 'btn-secondary', onclick: () => {
+          _showPrompt = false; draw();
+        }}, 'Fermer'),
+        h('button', { class: 'btn-primary', onclick: () => {
+          try {
+            traiterReponseIA(repTxt.value);
+            _showPrompt = false; _error = null;
+            draw();
+            toast('✅ Menus importés !', 'ok');
+          } catch(e) {
+            toast('❌ JSON invalide : ' + e.message, 'error');
+          }
+        }}, '✅ Importer la réponse')
+      )
+    );
+  }
+
+  // ── Bouton pour afficher le prompt manuellement ───────────
+  function btnVoirPrompt() {
+    return h('button', {
+      class: 'btn-secondary', style: 'margin-top:8px;width:100%;font-size:.85rem;',
+      onclick: () => { _promptTexte = construirePrompt(); _showPrompt = true; draw(); }
+    }, '📋 Voir / copier le prompt pour une IA externe');
+  }
+
+  // ── Intro ─────────────────────────────────────────────────
+  function renderIntro(hasIA) {
+    return h('div', { class: 'menu-intro' },
+      h('div', { class: 'menu-intro-icon' }, '👨‍🍳'),
+      h('p', {}, hasIA
+        ? "L'IA va composer des menus sur-mesure en tenant compte de votre stock."
+        : "30 recettes françaises classiques, sélectionnées selon votre stock."),
+      h('ul', { class: 'menu-intro-list' },
+        h('li', {}, '✅ Validez les repas qui vous conviennent'),
+        h('li', {}, '🔄 Remplacez ceux qui ne vous plaisent pas'),
+        h('li', {}, '💾 Vos choix sont sauvegardés automatiquement'),
+        h('li', {}, '🛒 Liste de courses générée pour les menus validés')
+      )
+    );
+  }
+
+  // ── Créer liste de courses ────────────────────────────────
   function creerListeCourses(manquants) {
     const produits = getProduits();
     const elements = manquants.map(ing => {
       const lc = ing.toLowerCase();
-      const match = produits.find(p => p.nom.toLowerCase() === lc || p.nom.toLowerCase().includes(lc) || lc.includes(p.nom.toLowerCase()));
+      const match = produits.find(p =>
+        p.nom.toLowerCase() === lc || p.nom.toLowerCase().includes(lc) || lc.includes(p.nom.toLowerCase())
+      );
       return { id: crypto.randomUUID(), produitId: match?.id ?? crypto.randomUUID(),
         nom: match?.nom ?? ing, emoji: match?.emoji ?? '🛒',
         categorie: match?.categorie ?? 'Autre', unite: match?.unite ?? 'unité',
         quantite: 1, estCoche: false, note: null };
     });
     const sem = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' });
-    ajouterListe({ nom: `Menus de la semaine (${sem})`, description: `${nbRepas} repas pour ${nbPersonnes} pers.`, emoji: '🍽️', couleur: '#4CAF50', elements });
-    _listeCreee = true;
-    toast('✅ Liste créée !', 'ok');
-    draw();
+    const nbVal = state.menus.filter(m => m.valide).length;
+    ajouterListe({ nom: `Menus de la semaine (${sem})`,
+      description: `${nbVal} repas pour ${state.nbPersonnes} pers.`,
+      emoji: '🍽️', couleur: '#4CAF50', elements });
+    state.listeCreee = true; save();
+    toast('✅ Liste créée !', 'ok'); draw();
   }
 
   draw();

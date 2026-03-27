@@ -1,5 +1,6 @@
 // ── Page : Paramètres ─────────────────────────────────────
 import { exporterJson, importerJson, viderToutesDonnees, getListes, getProduits, getStock } from '../store.js';
+import { PROFILS, chargerRestrictions, sauvegarderRestrictions } from '../restrictions.js';
 import { getStats, viderHistorique } from '../history.js';
 import { getRecurrence, setRecurrence, getPeriodes } from '../recurring.js';
 import { BUILD_VERSION, BUILD_DATE } from '../data.js';
@@ -8,6 +9,95 @@ import { navigate } from '../router.js';
 
 export function renderParametres(container) {
   let confirmVider = false;
+
+  function renderRestrictions() {
+    let r = chargerRestrictions();
+
+    function toggle(id) {
+      r = chargerRestrictions();
+      if (r.profilsActifs.includes(id))
+        r.profilsActifs = r.profilsActifs.filter(x => x !== id);
+      else
+        r.profilsActifs.push(id);
+      sauvegarderRestrictions(r);
+      draw();
+    }
+
+    const inputPerso = h('input', {
+      class: 'form-input',
+      type: 'text',
+      placeholder: 'Ex: cacahuètes, noix, crevettes…',
+      value: r.ingredientsPerso.join(', ')
+    });
+    inputPerso.addEventListener('change', e => {
+      r = chargerRestrictions();
+      r.ingredientsPerso = e.target.value
+        .split(',')
+        .map(s => s.trim())
+        .filter(Boolean);
+      sauvegarderRestrictions(r);
+    });
+
+    const nbActifs = r.profilsActifs.length + (r.ingredientsPerso.length > 0 ? 1 : 0);
+
+    return h('div', { class: 'param-section' },
+      h('div', { class: 'param-section-title' },
+        '🚫 Restrictions alimentaires',
+        nbActifs > 0
+          ? h('span', { class: 'restriction-badge' }, `${nbActifs} actif(s)`)
+          : null
+      ),
+      h('p', { class: 'param-desc' },
+        'Définissez vos contraintes alimentaires. Les menus et suggestions en tiendront automatiquement compte.'
+      ),
+
+      // Profils prédéfinis
+      h('div', { class: 'restriction-profils' },
+        ...PROFILS.map(profil => {
+          const actif = r.profilsActifs.includes(profil.id);
+          return h('div', {
+            class: `restriction-profil${actif ? ' active' : ''}`,
+            onclick: () => toggle(profil.id)
+          },
+            h('div', { class: 'restriction-profil-header' },
+              h('span', { class: 'restriction-emoji' }, profil.emoji),
+              h('span', { class: 'restriction-label' }, profil.label),
+              h('span', { class: `restriction-check${actif ? ' visible' : ''}` }, '✓')
+            ),
+            h('div', { class: 'restriction-desc' }, profil.description)
+          );
+        })
+      ),
+
+      // Ingrédients personnalisés
+      h('div', { class: 'form-group', style: 'margin-top:16px;' },
+        h('label', {}, '✏️ Autres ingrédients interdits (séparer par des virgules)'),
+        inputPerso
+      ),
+
+      // Résumé actif
+      r.profilsActifs.length > 0 || r.ingredientsPerso.length > 0
+        ? h('div', { class: 'restriction-resume' },
+            h('div', { class: 'restriction-resume-title' }, '⚠️ Actuellement exclus des menus :'),
+            h('div', { class: 'restriction-resume-content' },
+              ...r.profilsActifs.map(id => {
+                const p = PROFILS.find(x => x.id === id);
+                return p ? h('span', { class: 'restriction-tag' }, `${p.emoji} ${p.label}`) : null;
+              }).filter(Boolean),
+              ...r.ingredientsPerso.map(ing =>
+                h('span', { class: 'restriction-tag restriction-tag-perso' }, `🚫 ${ing}`)
+              )
+            )
+          )
+        : null,
+
+      r.profilsActifs.length > 0 || r.ingredientsPerso.length > 0
+        ? h('button', { class: 'btn-secondary', style: 'margin-top:8px;',
+            onclick: () => { sauvegarderRestrictions({ profilsActifs: [], ingredientsPerso: [] }); draw(); }
+          }, '✕ Tout effacer')
+        : null
+    );
+  }
 
   function draw() {
     render(container,
@@ -58,6 +148,9 @@ export function renderParametres(container) {
               )
             )
       ),
+
+      // ── Restrictions alimentaires
+      renderRestrictions(),
 
       // ── Listes récurrentes
       (() => {
