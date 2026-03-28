@@ -215,6 +215,21 @@ export function renderParametres(container) {
         );
       })(),
 
+      // ── Cache / Mise à jour
+      h('div', { class: 'param-section' },
+        h('div', { class: 'param-section-title' }, '🔄 Cache & Mise à jour'),
+        h('p', { class: 'param-desc' },
+          "Si l'application affiche une page blanche ou ne se met pas à jour après un déploiement, videz le cache du Service Worker."
+        ),
+        h('button', { class: 'btn-param btn-cache', onclick: viderCache },
+          h('span', { class: 'btn-param-icon' }, '🗑️'),
+          h('div', {},
+            h('div', { class: 'btn-param-label' }, 'Vider le cache & recharger'),
+            h('div', { class: 'btn-param-desc' }, 'Désinstalle le Service Worker et recharge')
+          )
+        )
+      ),
+
       // ── À propos
       h('div', { class: 'param-section' },
         h('div', { class: 'param-section-title' }, 'ℹ️ À propos'),
@@ -225,6 +240,25 @@ export function renderParametres(container) {
         )
       )
     );
+  }
+
+  async function viderCache() {
+    try {
+      // Désinscrire tous les Service Workers
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        for (const reg of regs) await reg.unregister();
+      }
+      // Vider tous les caches
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        for (const key of keys) await caches.delete(key);
+      }
+      // Recharger la page
+      window.location.reload(true);
+    } catch(e) {
+      alert('Erreur lors du nettoyage : ' + e.message);
+    }
   }
 
   function doExport() {

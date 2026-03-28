@@ -128,9 +128,27 @@ function selectionnerRecettes(nbRepas, exclure = []) {
 
   const nomsExclus = new Set(exclure.map(n => n.toLowerCase()));
 
+  // Convertit le temps "1h30" ou "45 min" en minutes
+  function tempsEnMinutes(t) {
+    if (!t) return 999;
+    const h = t.match(/(\d+)\s*h/);
+    const m = t.match(/(\d+)\s*min/);
+    return (h ? parseInt(h[1]) * 60 : 0) + (m ? parseInt(m[1]) : 0) || 999;
+  }
+
+  // Niveaux autorisés selon le choix
+  const niveauxAutorises = {
+    'tres-simple': ['Facile'],
+    'facile':      ['Facile'],
+    'moyen':       ['Facile', 'Moyen'],
+    'elabore':     ['Facile', 'Moyen', 'Difficile'],
+  }[state.niveau] ?? ['Facile', 'Moyen'];
+
   const candidates = RECETTES
     .filter(r => !nomsExclus.has(r.nom.toLowerCase()))
-    .filter(r => recetteCompatible(r))  // exclut les recettes incompatibles avec les restrictions
+    .filter(r => recetteCompatible(r))
+    .filter(r => niveauxAutorises.includes(r.diff))
+    .filter(r => tempsEnMinutes(r.temps) <= state.tempsMax)
     .map(r => {
       const tous = [...r.proteines, ...r.ingredients];
       return { r, score: tous.filter(i => dispo(i)).length / Math.max(tous.length, 1) };
@@ -174,10 +192,15 @@ export function renderMenu(container) {
   let state = chargerMenus() ?? {
     nbPersonnes: 2,
     nbRepas: 7,
-    menus: [],      // liste des menus avec leur statut
+    niveau: 'facile',   // 'tres-simple' | 'facile' | 'moyen' | 'elabore'
+    tempsMax: 60,       // minutes : 15 | 30 | 60 | 120
+    menus: [],
     listeCreee: false,
     showConfig: false
   };
+  // Migrations : ajoute les nouveaux champs si absents (state chargé d'une version précédente)
+  if (!state.niveau)   state.niveau   = 'facile';
+  if (!state.tempsMax) state.tempsMax = 60;
 
   let _loading         = false;
   let _error           = null;
@@ -236,6 +259,26 @@ export function renderMenu(container) {
             h('button', { class: 'qty-btn', onclick: () => { if (state.nbRepas > 1) { state.nbRepas--; save(); draw(); } } }, '−'),
             h('span', { class: 'menu-param-val' }, state.nbRepas),
             h('button', { class: 'qty-btn', onclick: () => { if (state.nbRepas < 14) { state.nbRepas++; save(); draw(); } } }, '＋')
+          )
+        ),
+        h('div', { class: 'menu-param-row' },
+          h('label', { class: 'menu-param-label' }, '👨\u200d🍳 Niveau de cuisine'),
+          h('div', { class: 'menu-niveau-btns' },
+            ...[ ['tres-simple','🥄 Très simple'], ['facile','✅ Facile'], ['moyen','👨\u200d🍳 Moyen'], ['elabore','⭐ Élaboré'] ]
+              .map(([val, lbl]) => h('button', {
+                class: 'menu-niveau-btn' + (state.niveau === val ? ' active' : ''),
+                onclick: () => { state.niveau = val; save(); draw(); }
+              }, lbl))
+          )
+        ),
+        h('div', { class: 'menu-param-row' },
+          h('label', { class: 'menu-param-label' }, '⏱ Temps max par repas'),
+          h('div', { class: 'menu-niveau-btns' },
+            ...[ [15,'15 mn'], [30,'30 mn'], [60,'1 h'], [120,'2 h'] ]
+              .map(([val, lbl]) => h('button', {
+                class: 'menu-niveau-btn' + (state.tempsMax === val ? ' active' : ''),
+                onclick: () => { state.tempsMax = val; save(); draw(); }
+              }, lbl))
           )
         ),
         h('button', {
@@ -387,9 +430,26 @@ export function renderMenu(container) {
       .filter((v,i,a) => a.indexOf(v)===i).join(', ') || 'aucun';
     const restrictions = getResumeRestrictions();
     const ligneRestrictions = restrictions ? `\nRESTRICTIONS ABSOLUES À RESPECTER : ${restrictions}. N'utilise JAMAIS ces ingrédients.` : '';
-    return `Tu es un chef cuisinier français. Propose exactement ${state.nbRepas} repas variés et équilibrés pour ${state.nbPersonnes} personne(s).
+
+    const niveauTexte = {
+      'tres-simple': 'très simple — recettes de moins de 5 ingrédients, aucune technique culinaire requise, idéal pour débutant complet',
+      'facile':      'facile — recettes simples du quotidien, techniques de base uniquement',
+      'moyen':       'moyen — recettes nécessitant un peu de maîtrise, techniques courantes',
+      'elabore':     'élaboré — recettes gastronomiques, techniques avancées acceptées',
+    }[state.niveau] ?? 'facile';
+
+    const tempsTexte = state.tempsMax === 15 ? '15 minutes maximum'
+      : state.tempsMax === 30 ? '30 minutes maximum'
+      : state.tempsMax === 60 ? '1 heure maximum'
+      : '2 heures maximum';
+
+    return `Tu es un assistant culinaire. Propose exactement ${state.nbRepas} repas pour ${state.nbPersonnes} personne(s).
 Stock disponible à la maison : ${stock}.
 Produits déjà dans les listes de courses : ${listes}.${ligneRestrictions}
+CONTRAINTES IMPORTANTES (à respecter absolument) :
+- Niveau de cuisine : ${niveauTexte}
+- Temps de préparation + cuisson : ${tempsTexte} par repas
+- Respecte strictement le niveau et le temps demandés
 Instructions : Privilégie les produits disponibles. Varie les protéines (viande, poisson, végétarien). Répartis les repas sur la semaine.
 Réponds UNIQUEMENT avec un objet JSON valide, sans markdown, sans texte avant ou après :
 {"menus":[{"slot":"Lundi – Déjeuner","nom":"Nom du plat","description":"Description courte","ingredientsPrincipaux":["Ingrédient 1","Ingrédient 2"],"ingredientsManquants":["Ingrédient manquant"],"tempsPreparation":"30 min","difficulte":"Facile","valide":false}]}

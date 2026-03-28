@@ -2279,3 +2279,40 @@ body {
 @media (max-width: 480px) {
     .restriction-profils { grid-template-columns: 1fr 1fr; }
 }
+
+/* === NIVEAU & TEMPS MENU === */
+.menu-niveau-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.menu-niveau-btn {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: .78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    font-family: var(--font-body);
+    white-space: nowrap;
+}
+.menu-niveau-btn:hover {
+    border-color: var(--primary-light);
+    color: var(--primary);
+    background: var(--primary-bg);
+}
+.menu-niveau-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    font-weight: 700;
+}
+@media (max-width: 480px) {
+    .menu-niveau-btn { padding: 5px 9px; font-size: .72rem; }
+}
+
+.btn-cache { border-color: #93c5fd; }
+.btn-cache:hover { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
