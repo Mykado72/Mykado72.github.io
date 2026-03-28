@@ -233,9 +233,32 @@ export async function importerListePartagee(payload) {
 
 // ── Export / Import / Reset ───────────────────────────────
 
+// Clés localStorage gérées en dehors du store (réglages)
+const LS_EXTERNES = [
+  'mldc-api-config',      // clé API (provider + key)
+  'mldc-menus-semaine',   // menus + nb personnes, repas, niveau, temps max
+  'mldc-restrictions',    // restrictions alimentaires
+  'mldc-recurring',       // listes récurrentes
+  'mldc-history',         // historique des courses
+  'mldc-theme',           // thème clair/sombre
+];
+
 export function exporterJson() {
-  return JSON.stringify({ version: '1.2.0', exportDate: new Date().toLocaleString('fr-FR'),
-    produits: _produits, listes: _listes, stock: _stock }, null, 2);
+  // Données principales
+  const data = {
+    version: '1.5.0',
+    exportDate: new Date().toLocaleString('fr-FR'),
+    produits: _produits,
+    listes:   _listes,
+    stock:    _stock,
+    reglages: {}
+  };
+  // Tous les réglages stockés en dehors du store
+  for (const key of LS_EXTERNES) {
+    const val = localStorage.getItem(key);
+    if (val !== null) data.reglages[key] = val;
+  }
+  return JSON.stringify(data, null, 2);
 }
 
 export function importerJson(json) {
@@ -244,8 +267,21 @@ export function importerJson(json) {
     if (data.produits) _produits = data.produits;
     if (data.listes)   _listes   = data.listes;
     if (data.stock)    _stock    = data.stock;
-    sauvegarder(); notify();
-    return { ok: true, message: `${_listes.length} liste(s), ${_produits.length} produit(s) et ${_stock.length} stock(s) importés.` };
+    sauvegarder();
+    // Restaure les réglages externes
+    let nbReglages = 0;
+    if (data.reglages && typeof data.reglages === 'object') {
+      for (const [key, val] of Object.entries(data.reglages)) {
+        if (LS_EXTERNES.includes(key) && val !== null) {
+          localStorage.setItem(key, val);
+          nbReglages++;
+        }
+      }
+    }
+    notify();
+    const msg = `${_listes.length} liste(s), ${_produits.length} produit(s), ${_stock.length} stock(s)` +
+      (nbReglages > 0 ? ` et ${nbReglages} réglage(s) importés.` : ' importés.');
+    return { ok: true, message: msg };
   } catch(e) { return { ok: false, message: `Fichier invalide : ${e.message}` }; }
 }
 
@@ -255,5 +291,9 @@ export function viderToutesDonnees() {
   localStorage.removeItem('produits');
   localStorage.removeItem('listes');
   localStorage.removeItem('stock');
+  // Efface aussi les réglages (sauf la clé API — conservée intentionnellement)
+  for (const key of LS_EXTERNES.filter(k => k !== 'mldc-api-config')) {
+    localStorage.removeItem(key);
+  }
   notify();
 }
